@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WinCC OA — Message Flow Simulator</title>
+<meta name="description" content="Interactive simulator visualizing message flows between WinCC OA managers: dpConnect, dpSet, dpGet, and advanced integration scenarios (Kafka, MCP, MQTT/UNS).">
+<meta name="author" content="Visuel Concept">
+<meta name="theme-color" content="#0f172a">
+<meta property="og:title" content="WinCC OA — Message Flow Simulator">
+<meta property="og:description" content="Interactive simulator visualizing message flows between WinCC OA managers: dpConnect, dpSet, dpGet, and advanced integration scenarios.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/overview.png">
+<!-- __CSS__ -->
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header>
+    <div style="display:flex; align-items:center; gap:16px;">
+      <img src="../assets/logo_VisuelConcept_couleurs.png" alt="Visuel Concept" style="height:40px;" id="header-logo">
+      <div>
+        <h1>WinCC OA — Message Flow Simulator</h1>
+        <div class="subtitle">dpConnect &middot; dpSet &middot; dpGet — Inter-manager communication</div>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="btn primary" id="btn-dpget" onclick="showScenarioIntro('dpGet')">dpGet</button>
+      <button class="btn primary" id="btn-dpset" onclick="showScenarioIntro('dpSet')">dpSet</button>
+      <button class="btn primary" id="btn-dpconnect" onclick="showScenarioIntro('dpConnect')">dpConnect</button>
+      <button class="btn primary" id="btn-plclive" onclick="showScenarioIntro('plcLive')">PLC Live</button>
+      <button class="btn primary" id="btn-cycle" onclick="showScenarioIntro('cycle')">Full cycle</button>
+      <button class="btn primary" id="btn-history" onclick="showScenarioIntro('history')">History read</button>
+      <button class="btn primary" id="btn-kafka" onclick="showScenarioIntro('kafka')">Node.js &rarr; Kafka</button>
+      <button class="btn primary" id="btn-mcp" onclick="showScenarioIntro('mcp')">Claude AI (MCP)</button>
+      <button class="btn primary" id="btn-uns" onclick="showScenarioIntro('uns')">UNS (MQTT)</button>
+      <button class="btn" id="btn-prev" onclick="prevStep()" disabled>&#9666; Previous</button>
+      <button class="btn primary" id="btn-start-scenario" onclick="startPendingScenario()" style="display:none">Start &#9656;</button>
+      <button class="btn" id="btn-step" onclick="nextStep()" disabled>Next &#9656;</button>
+      <button class="btn" id="btn-reset" onclick="resetAll()">Reset</button>
+      <button class="btn" id="btn-3d" onclick="toggle3D()">3D</button>
+      <div class="lang-toggle">
+        <button class="lang-btn active" id="lang-fr" onclick="setLang('fr')">FR</button>
+        <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
+      </div>
+      <div class="speed-control">
+        <span>Speed</span>
+        <input type="range" id="speed" min="1" max="5" value="3" step="1">
+        <span id="speed-label">&times;1</span>
+      </div>
+    </div>
+  </header>
+
+  <div id="step-bar">
+    <div class="idle-text" id="idle-msg">Choose a scenario to start the animation.</div>
+    <span class="step-num" id="step-num" style="display:none"></span>
+    <div class="step-text" id="step-text" style="display:none"></div>
+    <div id="scenario-intro" style="display:none">
+      <div class="scenario-intro-content">
+        <span class="scenario-intro-title" id="intro-title"></span>
+        <span class="scenario-intro-desc" id="intro-desc"></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="canvas-area">
+    <canvas id="canvas"></canvas>
+    <div id="three-container" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;"></div>
+    <div id="info-panel">
+      <div class="panel-header" id="panel-drag-handle">
+        <h3 style="margin:0"><span class="dot" style="background:#60a5fa"></span> Subscription Table (EV)</h3>
+        <button class="panel-toggle" id="panel-toggle-btn" onclick="togglePanel()">&#8722;</button>
+      </div>
+      <div class="panel-body" id="panel-body">
+        <table class="sub-table" id="sub-table">
+          <thead><tr><th id="th-mgr">Manager</th><th>DPE</th><th>Callback</th></tr></thead>
+          <tbody id="sub-body"></tbody>
+        </table>
+        <div class="process-image">
+          <h3><span class="dot" style="background:#34d399"></span> <span id="panel-pi-title">Process Image (EV — RAM)</span></h3>
+          <div id="pi-values"></div>
+        </div>
+      </div>
+    </div>
+    <div class="legend" id="legend-bar">
+      <div class="legend-item"><div class="legend-line" style="background:#3b82f6"></div> Request / dpSet</div>
+      <div class="legend-item"><div class="legend-line" style="background:#f59e0b"></div> Notification</div>
+      <div class="legend-item"><div class="legend-line" style="background:#10b981"></div> Response / Callback</div>
+      <div class="legend-item"><div class="legend-line" style="background:#6366f1"></div> Persistence</div>
+      <div class="legend-item"><div class="legend-line" style="background:#ec4899"></div> Online Change (NGA)</div>
+      <div class="legend-item"><div class="legend-line" style="background:#94a3b8"></div> OPC UA (field)</div>
+      <div class="legend-item"><div class="legend-line" style="background:#06b6d4"></div> Kafka (streaming)</div>
+      <div class="legend-item"><div class="legend-line" style="background:#a855f7"></div> MCP / Claude AI</div>
+      <div class="legend-item"><div class="legend-line" style="background:#22d3ee"></div> MQTT (UNS)</div>
+    </div>
+  </div>
+</div>
+
+<!-- __JS_APP__ -->
+<script src="app.js"></script>
+<!-- __JS_3D__ -->
+<script src="renderer3d.js"></script>
+</body>
+</html>
