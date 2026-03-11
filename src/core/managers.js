@@ -51,11 +51,11 @@ function isManagerVisible(id) {
 function layoutManagers(w, h) {
   var cx = (w - 280) / 2; // account for info panel
   var cy = h / 2;
-  var rx = Math.min(cx * 0.62, 300);
-  var ry = Math.min(cy * 0.65, 200);
+  var rx = Math.min(cx * 0.50, 240);
+  var ry = Math.min(cy * 0.52, 160);
 
   // EV center
-  mgrPos.ev = { x: cx, y: cy - 20 };
+  mgrPos.ev = { x: cx, y: cy - 16 };
   // DM below EV
   mgrPos.dm = { x: cx - rx * 0.45, y: cy + ry * 0.85 };
   // NGA below EV, right side (receives directly from EV)
@@ -63,20 +63,20 @@ function layoutManagers(w, h) {
   // PostgreSQL database — external, below NGA
   mgrPos.pgsql = { x: cx + rx * 0.45, y: cy + ry * 1.55 };
   // Driver left of EV
-  mgrPos.driver = { x: cx - rx, y: cy - 20 };
+  mgrPos.driver = { x: cx - rx, y: cy - 16 };
   // PLC far left (outside WinCC OA boundary)
-  mgrPos.plc = { x: cx - rx * 1.7, y: cy - 20 };
+  mgrPos.plc = { x: cx - rx * 1.7, y: cy - 16 };
   // CTRL top right
   mgrPos.ctrl_pid = { x: cx + rx * 0.6, y: cy - ry * 0.9 };
-  // 3 UI Managers stacked vertically on the right
+  // 2 UI Managers stacked vertically on the right
   var uiX = cx + rx * 1.05;
-  var uiSpacing = mgrH + 16;
-  mgrPos.ui1 = { x: uiX, y: cy - uiSpacing / 2 - 5 };
-  mgrPos.ui2 = { x: uiX, y: cy + uiSpacing / 2 + 5 };
+  var uiSpacing = mgrH + 10;
+  mgrPos.ui1 = { x: uiX, y: cy - uiSpacing / 2 - 4 };
+  mgrPos.ui2 = { x: uiX, y: cy + uiSpacing / 2 + 4 };
   // Inside-WinCC-OA extension managers (one per scenario, shared position)
-  var insideExtX = uiX + mgrW + 50;
-  var extSpacing = mgrH + 16;
-  var extTopY = cy - extSpacing - 10;
+  var insideExtX = uiX + mgrW + 40;
+  var extSpacing = mgrH + 10;
+  var extTopY = cy - extSpacing - 8;
 
   // JS Manager, MCP Server, MQTT Publisher share the same inside position
   mgrPos.js_mgr = { x: insideExtX, y: cy };
@@ -84,7 +84,7 @@ function layoutManagers(w, h) {
   mgrPos.mqtt_pub = { x: insideExtX, y: cy };
 
   // Outside-WinCC-OA managers (further right, stacked vertically)
-  var outsideExtX = insideExtX + mgrW + 120;
+  var outsideExtX = insideExtX + mgrW + 100;
 
   // Kafka scenario: Broker Kafka, Predictive Maintenance
   mgrPos.kafka = { x: outsideExtX, y: extTopY };
@@ -96,7 +96,7 @@ function layoutManagers(w, h) {
 
   // UNS scenario: MQTT Broker on top, MES and Cloud Historian side by side below
   mgrPos.mqtt_broker = { x: outsideExtX, y: extTopY };
-  var unsSubY = extTopY + extSpacing + 20;
-  mgrPos.uns_mes = { x: outsideExtX - mgrW/2 - 20, y: unsSubY };
-  mgrPos.uns_hist = { x: outsideExtX + mgrW/2 + 20, y: unsSubY };
+  var unsSubY = extTopY + extSpacing + 16;
+  mgrPos.uns_mes = { x: outsideExtX - mgrW/2 - 16, y: unsSubY };
+  mgrPos.uns_hist = { x: outsideExtX + mgrW/2 + 16, y: unsSubY };
 }
