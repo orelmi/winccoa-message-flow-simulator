@@ -53,6 +53,14 @@ function resize() {
   canvas.width = area.clientWidth;
   canvas.height = area.clientHeight;
   layoutManagers(canvas.width, canvas.height);
+  // Reset info panel position on resize to prevent offscreen panel
+  var panel = document.getElementById('info-panel');
+  if (panel) {
+    panel.style.left = '';
+    panel.style.top = '';
+    panel.style.right = '';
+    panel.style.bottom = '';
+  }
 }
 window.addEventListener('resize', resize);
 resize();
@@ -71,11 +79,16 @@ function drawRoundedRect(x, y, w, h, r) {
   ctx.closePath();
 }
 
+function getCanvasScale() {
+  return canvas.width < 768 ? Math.max(canvas.width / 900, 0.45) : 1;
+}
+
 function drawManager(id) {
   var m = managers[id];
   var p = mgrPos[id];
   if (!p) return;
   var x = p.x - mgrW/2, y = p.y - mgrH/2;
+  var s = getCanvasScale();
 
   // Glow
   if (glowManagers[id]) {
@@ -83,48 +96,51 @@ function drawManager(id) {
     var alpha = Math.sin(g.t / g.duration * Math.PI) * 0.5;
     ctx.save();
     ctx.shadowColor = g.color;
-    ctx.shadowBlur = 25;
-    drawRoundedRect(x - 3, y - 3, mgrW + 6, mgrH + 6, 10);
+    ctx.shadowBlur = 25 * s;
+    drawRoundedRect(x - 3 * s, y - 3 * s, mgrW + 6 * s, mgrH + 6 * s, 10 * s);
     ctx.fillStyle = g.color.replace(')', ',' + alpha + ')').replace('rgb', 'rgba');
     ctx.fill();
     ctx.restore();
   }
 
   // Box
-  drawRoundedRect(x, y, mgrW, mgrH, 8);
+  drawRoundedRect(x, y, mgrW, mgrH, 8 * s);
   ctx.fillStyle = m.style === 'dashed' ? '#141c2b' : '#1e293b';
   ctx.fill();
   ctx.strokeStyle = m.color;
-  ctx.lineWidth = 2;
-  if (m.style === 'dashed') ctx.setLineDash([6, 4]);
+  ctx.lineWidth = 2 * s;
+  if (m.style === 'dashed') ctx.setLineDash([6 * s, 4 * s]);
   ctx.stroke();
   ctx.setLineDash([]);
 
   // Label
   var lines = m.label.split('\n');
+  var fontSize1 = Math.round(12 * s);
+  var fontSize2 = Math.round(11 * s);
   ctx.fillStyle = '#e2e8f0';
-  ctx.font = '600 12px "Segoe UI", system-ui, sans-serif';
+  ctx.font = '600 ' + fontSize1 + 'px "Segoe UI", system-ui, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  var lineH = 15;
+  var lineH = Math.round(15 * s);
   var startY = p.y - ((lines.length - 1) * lineH) / 2;
   lines.forEach(function(line, i) {
     ctx.fillStyle = i === 0 ? '#fff' : m.color;
-    ctx.font = i === 0 ? '600 12px "Segoe UI", system-ui, sans-serif' : '11px "Segoe UI", system-ui, sans-serif';
+    ctx.font = i === 0 ? '600 ' + fontSize1 + 'px "Segoe UI", system-ui, sans-serif' : fontSize2 + 'px "Segoe UI", system-ui, sans-serif';
     ctx.fillText(line, p.x, startY + i * lineH);
   });
 }
 
 function drawArrow(x1, y1, x2, y2, color, progress, label) {
+  var s = getCanvasScale();
   // Clamp endpoints to manager box edges
   var dx = x2 - x1, dy = y2 - y1;
   var dist = Math.sqrt(dx*dx + dy*dy);
   if (dist < 1) return;
   var nx = dx/dist, ny = dy/dist;
 
-  // offset start/end from box edges
-  var startDist = 40;
-  var endDist = 40;
+  // offset start/end from box edges (scaled)
+  var startDist = mgrW * 0.35;
+  var endDist = mgrW * 0.35;
   var sx = x1 + nx * startDist, sy = y1 + ny * startDist;
   var ex = x2 - nx * endDist, ey = y2 - ny * endDist;
 
@@ -137,14 +153,14 @@ function drawArrow(x1, y1, x2, y2, color, progress, label) {
   var px = sx + segDx * progress, py = sy + segDy * progress;
   ctx.lineTo(px, py);
   ctx.strokeStyle = color;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = Math.max(2, 3 * s);
   ctx.globalAlpha = 0.8;
   ctx.stroke();
   ctx.globalAlpha = 1;
 
   // Arrowhead
   if (progress > 0.05) {
-    var aLen = 10;
+    var aLen = Math.max(6, 10 * s);
     var angle = Math.atan2(segDy, segDx);
     ctx.beginPath();
     ctx.moveTo(px, py);
@@ -157,27 +173,28 @@ function drawArrow(x1, y1, x2, y2, color, progress, label) {
 
   // Dot at head
   ctx.beginPath();
-  ctx.arc(px, py, 5, 0, Math.PI * 2);
+  ctx.arc(px, py, Math.max(3, 5 * s), 0, Math.PI * 2);
   ctx.fillStyle = color;
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(px, py, 8, 0, Math.PI * 2);
+  ctx.arc(px, py, Math.max(5, 8 * s), 0, Math.PI * 2);
   ctx.strokeStyle = color;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.5 * s;
   ctx.globalAlpha = 0.4;
   ctx.stroke();
   ctx.globalAlpha = 1;
 
   // Label
   if (label) {
+    var fontSize = Math.max(8, Math.round(11 * s));
     var lx = sx + segDx * Math.min(progress, 0.55);
-    var ly = sy + segDy * Math.min(progress, 0.55) - 14;
-    ctx.font = '600 11px "Consolas", "Fira Code", monospace';
+    var ly = sy + segDy * Math.min(progress, 0.55) - 14 * s;
+    ctx.font = '600 ' + fontSize + 'px "Consolas", "Fira Code", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     // background
-    var tw = ctx.measureText(label).width + 10;
-    drawRoundedRect(lx - tw/2, ly - 14, tw, 17, 4);
+    var tw = ctx.measureText(label).width + 10 * s;
+    drawRoundedRect(lx - tw/2, ly - 14 * s, tw, 17 * s, 4 * s);
     ctx.fillStyle = 'rgba(17,24,39,0.9)';
     ctx.fill();
     ctx.strokeStyle = color;

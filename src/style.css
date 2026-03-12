@@ -285,3 +285,144 @@
     height: 3px;
     border-radius: 2px;
   }
+
+  /* ── Mobile responsive ── */
+  @media (max-width: 768px) {
+    body {
+      overflow-y: auto;
+      height: auto;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    #app {
+      height: 100vh;
+      height: 100dvh;
+    }
+
+    header {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 8px 12px;
+      gap: 8px;
+    }
+    .header-logo {
+      height: 28px !important;
+    }
+    header h1 {
+      font-size: 13px;
+    }
+    header .subtitle {
+      font-size: 10px;
+    }
+
+    .controls {
+      width: 100%;
+      gap: 4px;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px;
+    }
+    .btn {
+      padding: 5px 8px;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    .lang-toggle {
+      margin-left: 4px;
+    }
+    .lang-btn {
+      padding: 4px 7px;
+      font-size: 11px;
+    }
+    .speed-control {
+      margin-left: 4px;
+      padding-left: 8px;
+      font-size: 11px;
+    }
+    .speed-control input[type=range] {
+      width: 50px;
+    }
+
+    #step-bar {
+      padding: 6px 12px;
+      min-height: 34px;
+      gap: 8px;
+    }
+    #step-bar .step-num {
+      font-size: 10px;
+      padding: 2px 7px;
+    }
+    #step-bar .step-text {
+      font-size: 11px;
+    }
+    #step-bar .step-text code {
+      font-size: 10px;
+    }
+    #step-bar .idle-text {
+      font-size: 11px;
+    }
+    .scenario-intro-title {
+      font-size: 12px;
+    }
+    .scenario-intro-desc {
+      font-size: 11px;
+    }
+
+    #canvas-area {
+      min-height: 50vh;
+    }
+
+    #info-panel {
+      position: absolute;
+      top: auto;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      max-height: 40vh;
+      border-radius: 8px 8px 0 0;
+      padding: 8px;
+      font-size: 11px;
+    }
+    #info-panel h3 {
+      font-size: 11px;
+    }
+    #info-panel .panel-header {
+      cursor: pointer;
+    }
+    #info-panel.collapsed {
+      width: 100%;
+      min-width: unset;
+      max-height: none;
+    }
+
+    .legend {
+      bottom: auto;
+      top: 4px;
+      left: 4px;
+      right: auto;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 9px;
+      padding: 4px 8px;
+      max-width: calc(100% - 8px);
+    }
+    .legend-line {
+      width: 14px;
+      height: 2px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    header h1 {
+      font-size: 12px;
+    }
+    .btn {
+      padding: 4px 6px;
+      font-size: 10px;
+    }
+    #info-panel {
+      max-height: 35vh;
+    }
+  }
