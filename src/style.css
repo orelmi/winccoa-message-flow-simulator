@@ -464,6 +464,12 @@
       border-color: #3b82f6;
       transform: scale(0.97);
     }
+    .mobile-tile-icon {
+      font-size: 22px;
+      color: #60a5fa;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
     .mobile-tile-num {
       font-size: 9px;
       color: #60a5fa;
