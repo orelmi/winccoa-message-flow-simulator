@@ -324,18 +324,19 @@
       display: none !important;
     }
 
-    /* Floating mobile toolbar (visible only when diagram is shown) */
+    /* Floating mobile toolbar at bottom */
     .mobile-toolbar {
       display: flex !important;
       position: fixed;
-      top: 0;
+      bottom: 0;
       left: 0;
       right: 0;
       z-index: 50;
       background: rgba(17, 24, 39, 0.95);
       backdrop-filter: blur(8px);
-      border-bottom: 1px solid #1e3a5f;
+      border-top: 1px solid #1e3a5f;
       padding: 4px 8px;
+      padding-bottom: max(4px, env(safe-area-inset-bottom));
       align-items: center;
       gap: 4px;
     }
@@ -366,7 +367,6 @@
       padding: 4px 8px;
       min-height: 24px;
       gap: 6px;
-      margin-top: 36px;
     }
     #step-bar .step-num {
       font-size: 10px;
@@ -388,11 +388,11 @@
       font-size: 10px;
     }
 
-    /* Info panel: bottom sheet, collapsed by default */
+    /* Info panel: bottom sheet above toolbar, collapsed by default */
     #info-panel {
       position: absolute;
       top: auto;
-      bottom: 0;
+      bottom: 40px;
       left: 0;
       right: 0;
       width: 100%;
@@ -478,6 +478,12 @@
       border-color: #3b82f6;
       transform: scale(0.97);
     }
+    .mobile-tile-icon {
+      font-size: 22px;
+      color: #60a5fa;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
     .mobile-tile-num {
       font-size: 9px;
       color: #60a5fa;
@@ -547,6 +553,50 @@
       0%, 100% { transform: rotate(0deg); }
       25% { transform: rotate(-90deg); }
       75% { transform: rotate(-90deg); }
+    }
+  }
+
+  /* Mobile landscape: maximize diagram area */
+  @media (max-width: 1024px) and (max-height: 500px) {
+    /* Compact toolbar */
+    .mobile-toolbar {
+      padding: 2px 6px;
+      gap: 3px;
+    }
+    .mobile-toolbar .btn {
+      padding: 3px 8px;
+      font-size: 10px;
+    }
+
+    /* Overlay step-bar on canvas instead of separate grid row */
+    #step-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      margin-top: 0;
+      padding: 3px 8px;
+      min-height: 0;
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(4px);
+      border-bottom: 1px solid rgba(30, 58, 95, 0.5);
+    }
+
+    /* Hide idle text in landscape to save space */
+    #step-bar .idle-text {
+      font-size: 9px;
+    }
+    .scenario-intro-title {
+      font-size: 10px;
+    }
+    .scenario-intro-desc {
+      font-size: 9px;
+    }
+
+    /* Info panel: smaller in landscape */
+    #info-panel {
+      max-height: 30vh;
     }
   }
 
@@ -670,46 +720,55 @@
   </div>
   <div class="mobile-menu-grid" id="mobile-menu-grid">
     <button class="mobile-tile" onclick="mobileSelectScenario('dpGet')">
+      <span class="mobile-tile-icon">&#8681;</span>
       <span class="mobile-tile-num">S1</span>
       <span class="mobile-tile-label">dpGet</span>
       <span class="mobile-tile-desc" id="tile-desc-dpGet">One-time value read from the process image (RAM).</span>
     </button>
     <button class="mobile-tile" onclick="mobileSelectScenario('dpSet')">
+      <span class="mobile-tile-icon">&#8679;</span>
       <span class="mobile-tile-num">S2</span>
       <span class="mobile-tile-label">dpSet</span>
       <span class="mobile-tile-desc" id="tile-desc-dpSet">Operator setpoint write to all subscribed managers.</span>
     </button>
     <button class="mobile-tile" onclick="mobileSelectScenario('dpConnect')">
+      <span class="mobile-tile-icon">&#8644;</span>
       <span class="mobile-tile-num">S3</span>
       <span class="mobile-tile-label">dpConnect</span>
       <span class="mobile-tile-desc" id="tile-desc-dpConnect">Publish/subscribe subscription to a datapoint.</span>
     </button>
     <button class="mobile-tile" onclick="mobileSelectScenario('plcLive')">
+      <span class="mobile-tile-icon">&#9735;</span>
       <span class="mobile-tile-num">S4</span>
       <span class="mobile-tile-label">PLC Live</span>
       <span class="mobile-tile-desc" id="tile-desc-plcLive">Spontaneous PLC data, real-time push notifications.</span>
     </button>
     <button class="mobile-tile" onclick="mobileSelectScenario('cycle')">
+      <span class="mobile-tile-icon">&#8635;</span>
       <span class="mobile-tile-num">S5</span>
       <span class="mobile-tile-label">Full cycle</span>
       <span class="mobile-tile-desc" id="tile-desc-cycle">Full furnace regulation cycle with 2 UIs.</span>
     </button>
     <button class="mobile-tile" onclick="mobileSelectScenario('history')">
+      <span class="mobile-tile-icon">&#9776;</span>
       <span class="mobile-tile-num">S6</span>
       <span class="mobile-tile-label">History read</span>
       <span class="mobile-tile-desc" id="tile-desc-history">History read via NGA and PostgreSQL.</span>
     </button>
     <button class="mobile-tile" onclick="mobileSelectScenario('kafka')">
+      <span class="mobile-tile-icon">&#9656;&#9656;</span>
       <span class="mobile-tile-num">S7</span>
       <span class="mobile-tile-label">Node.js &rarr; Kafka</span>
       <span class="mobile-tile-desc" id="tile-desc-kafka">Kafka streaming for predictive maintenance.</span>
     </button>
     <button class="mobile-tile" onclick="mobileSelectScenario('mcp')">
+      <span class="mobile-tile-icon">&#10038;</span>
       <span class="mobile-tile-num">S8</span>
       <span class="mobile-tile-label">Claude AI (MCP)</span>
       <span class="mobile-tile-desc" id="tile-desc-mcp">PID optimization via Claude Desktop App and MCP.</span>
     </button>
     <button class="mobile-tile" onclick="mobileSelectScenario('uns')">
+      <span class="mobile-tile-icon">&#9041;</span>
       <span class="mobile-tile-num">S9</span>
       <span class="mobile-tile-label">UNS (MQTT)</span>
       <span class="mobile-tile-desc" id="tile-desc-uns">Unified Namespace (UNS) architecture via MQTT.</span>
