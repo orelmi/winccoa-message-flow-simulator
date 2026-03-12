@@ -25,6 +25,7 @@ var managers = {
 var mgrPos = {};
 var mgrW = 120, mgrH = 64;
 var baseMgrW = 120, baseMgrH = 64;
+var currentScale = 1;
 
 // Manager visibility per scenario
 var BASE_MANAGERS = ['plc', 'driver', 'ev', 'dm', 'ctrl_pid', 'ui1', 'ui2', 'nga', 'pgsql'];
@@ -50,24 +51,97 @@ function isManagerVisible(id) {
 }
 
 function layoutManagers(w, h) {
-  // Scale factor for small screens (use both dimensions to ensure fit)
   var isMobile = w < 768 || (w < 1024 && h < 500);
-  var scale = isMobile ? Math.max(Math.min(w / 900, h / 450), 0.38) : 1;
+  var isPortrait = isMobile && h > w * 1.1;
+  var scale;
+
+  if (isPortrait) {
+    scale = Math.max(Math.min(w / 480, h / 850), 0.45);
+  } else {
+    scale = isMobile ? Math.max(Math.min(w / 900, h / 450), 0.38) : 1;
+  }
+
+  currentScale = scale;
   mgrW = Math.round(baseMgrW * scale);
   mgrH = Math.round(baseMgrH * scale);
 
-  // On mobile, don't subtract info panel width (panel overlays or is collapsed)
+  if (isPortrait) {
+    layoutPortrait(w, h, scale);
+  } else {
+    layoutLandscape(w, h, scale, isMobile);
+  }
+}
+
+// Portrait: vertical spine PLC->Driver->EV->DM->NGA->PGSQL
+// CTRL branches left, UIs branch right
+function layoutPortrait(w, h, scale) {
+  var cx = w / 2;
+  var colW = Math.min((w - mgrW - 16) / 2, mgrW * 1.3);
+  var leftCol = cx - colW;
+  var rightCol = cx + colW;
+
+  var pad = 8;
+  var rowH = (h - pad * 2) / 6;
+
+  // Vertical spine (center column)
+  mgrPos.plc =    { x: cx, y: pad + rowH * 0.5 };
+  mgrPos.driver = { x: cx, y: pad + rowH * 1.5 };
+  mgrPos.ev =     { x: cx, y: pad + rowH * 2.5 };
+  mgrPos.dm =     { x: cx, y: pad + rowH * 3.5 };
+  mgrPos.nga =    { x: cx, y: pad + rowH * 4.3 };
+  mgrPos.pgsql =  { x: cx, y: pad + rowH * 5.2 };
+
+  // Left branch: CTRL at same row as EV
+  mgrPos.ctrl_pid = { x: leftCol, y: pad + rowH * 2.5 };
+
+  // Right branch: UIs stacked around EV row
+  var uiGap = mgrH * 0.55;
+  mgrPos.ui1 = { x: rightCol, y: pad + rowH * 2.5 - uiGap };
+  mgrPos.ui2 = { x: rightCol, y: pad + rowH * 2.5 + uiGap };
+
+  // Inside extension managers (right column, below UIs)
+  var insideExtY = pad + rowH * 3.5;
+  mgrPos.js_mgr =     { x: rightCol, y: insideExtY };
+  mgrPos.mcp_server = { x: rightCol, y: insideExtY };
+  mgrPos.mqtt_pub =   { x: rightCol, y: insideExtY };
+
+  // Outside extension managers (right column, further down)
+  var extSpacing = mgrH + 8 * scale;
+  var extY = pad + rowH * 4.5;
+
+  mgrPos.kafka =       { x: rightCol, y: extY };
+  mgrPos.pred_maint =  { x: rightCol, y: extY + extSpacing };
+
+  mgrPos.claude_app =  { x: rightCol, y: extY };
+  mgrPos.anthropic =   { x: rightCol, y: extY + extSpacing };
+
+  mgrPos.mqtt_broker = { x: rightCol, y: extY };
+  var unsSubY = extY + extSpacing;
+  mgrPos.uns_mes =  { x: leftCol, y: unsSubY };
+  mgrPos.uns_hist = { x: rightCol, y: unsSubY };
+}
+
+// Landscape: horizontal layout (existing design, improved space usage)
+function layoutLandscape(w, h, scale, isMobile) {
   var panelOffset = isMobile ? 0 : 280;
   var cx = (w - panelOffset) / 2;
   var cy = h / 2;
-  var rx = Math.min(cx * 0.50, 240 * scale);
-  var ry = Math.min(cy * 0.48, 150 * scale);
+
+  // Use more space on mobile
+  var rx, ry;
+  if (isMobile) {
+    rx = Math.min(cx * 0.58, 280 * scale);
+    ry = Math.min(cy * 0.58, 180 * scale);
+  } else {
+    rx = Math.min(cx * 0.50, 240 * scale);
+    ry = Math.min(cy * 0.48, 150 * scale);
+  }
 
   // EV center
   mgrPos.ev = { x: cx, y: cy - 16 * scale };
   // DM below EV
   mgrPos.dm = { x: cx - rx * 0.45, y: cy + ry * 0.85 };
-  // NGA below EV, right side (receives directly from EV)
+  // NGA below EV, right side
   mgrPos.nga = { x: cx + rx * 0.45, y: cy + ry * 0.85 };
   // PostgreSQL database — external, below NGA
   mgrPos.pgsql = { x: cx + rx * 0.45, y: cy + ry * 1.55 };

@@ -3,6 +3,7 @@ var canvas = document.getElementById('canvas');
 var ctx = canvas.getContext('2d');
 var speedSlider = document.getElementById('speed');
 var speedLabel = document.getElementById('speed-label');
+var canvasW = 0, canvasH = 0; // CSS dimensions (not pixel)
 
 speedSlider.addEventListener('input', function() {
   var v = [0.25, 0.5, 1, 2, 3][speedSlider.value - 1];
@@ -50,17 +51,15 @@ var animating = true;
 
 function resize() {
   var area = document.getElementById('canvas-area');
-  canvas.width = area.clientWidth;
-  canvas.height = area.clientHeight;
-  layoutManagers(canvas.width, canvas.height);
-  // Reset info panel position on resize to prevent offscreen panel
-  var panel = document.getElementById('info-panel');
-  if (panel) {
-    panel.style.left = '';
-    panel.style.top = '';
-    panel.style.right = '';
-    panel.style.bottom = '';
-  }
+  var dpr = window.devicePixelRatio || 1;
+  canvasW = area.clientWidth;
+  canvasH = area.clientHeight;
+  canvas.width = canvasW * dpr;
+  canvas.height = canvasH * dpr;
+  canvas.style.width = canvasW + 'px';
+  canvas.style.height = canvasH + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  layoutManagers(canvasW, canvasH);
 }
 window.addEventListener('resize', resize);
 resize();
@@ -80,8 +79,7 @@ function drawRoundedRect(x, y, w, h, r) {
 }
 
 function getCanvasScale() {
-  var isMobile = canvas.width < 768 || (canvas.width < 1024 && canvas.height < 500);
-  return isMobile ? Math.max(Math.min(canvas.width / 900, canvas.height / 450), 0.38) : 1;
+  return currentScale;
 }
 
 function drawManager(id) {
@@ -207,12 +205,12 @@ function drawArrow(x1, y1, x2, y2, color, progress, label) {
 }
 
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvasW, canvasH);
 
   // Grid dots
   ctx.fillStyle = 'rgba(255,255,255,0.03)';
-  for (var x = 0; x < canvas.width; x += 30) {
-    for (var y = 0; y < canvas.height; y += 30) {
+  for (var x = 0; x < canvasW; x += 30) {
+    for (var y = 0; y < canvasH; y += 30) {
       ctx.fillRect(x, y, 1, 1);
     }
   }
