@@ -300,45 +300,62 @@
     border-radius: 2px;
   }
 
+  /* ── Desktop: scenario & nav buttons inline ── */
+  .scenario-buttons, .nav-buttons {
+    display: contents;
+  }
+  .mobile-menu { display: none; }
+  #btn-scenarios-mobile { display: none !important; }
+  #landscape-hint { display: none; }
+
   /* ── Mobile responsive ── */
   @media (max-width: 768px) {
     body {
-      overflow-y: auto;
-      height: auto;
-      min-height: 100vh;
-      min-height: 100dvh;
+      overflow: hidden;
+      height: 100vh;
+      height: 100dvh;
     }
     #app {
       height: 100vh;
       height: 100dvh;
     }
 
+    /* Hide desktop header entirely when mobile menu is shown */
     header {
-      flex-direction: column;
-      align-items: flex-start;
-      padding: 8px 12px;
-      gap: 8px;
+      padding: 4px 8px;
+      gap: 4px;
     }
     .header-logo {
-      height: 28px !important;
+      height: 24px !important;
     }
     header h1 {
-      font-size: 13px;
+      font-size: 12px;
     }
     header .subtitle {
-      font-size: 10px;
+      display: none;
     }
 
+    /* Hide scenario buttons from header on mobile */
+    .scenario-buttons {
+      display: none !important;
+    }
+    .nav-buttons {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    #btn-scenarios-mobile {
+      display: inline-block !important;
+    }
     .controls {
       width: 100%;
       gap: 4px;
-      overflow-x: auto;
       flex-wrap: nowrap;
+      overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      padding-bottom: 4px;
     }
     .btn {
-      padding: 5px 8px;
+      padding: 4px 8px;
       font-size: 11px;
       flex-shrink: 0;
     }
@@ -346,47 +363,47 @@
       margin-left: 4px;
     }
     .lang-btn {
-      padding: 4px 7px;
-      font-size: 11px;
+      padding: 3px 6px;
+      font-size: 10px;
     }
     .speed-control {
       margin-left: 4px;
-      padding-left: 8px;
-      font-size: 11px;
+      padding-left: 6px;
+      font-size: 10px;
     }
     .speed-control input[type=range] {
       width: 50px;
     }
+    /* Hide 3D button on mobile */
+    #btn-3d { display: none; }
 
+    /* Step bar compact */
     #step-bar {
-      padding: 6px 12px;
-      min-height: 34px;
-      gap: 8px;
+      padding: 4px 8px;
+      min-height: 28px;
+      gap: 6px;
     }
     #step-bar .step-num {
       font-size: 10px;
-      padding: 2px 7px;
+      padding: 2px 6px;
     }
     #step-bar .step-text {
-      font-size: 11px;
-    }
-    #step-bar .step-text code {
       font-size: 10px;
     }
+    #step-bar .step-text code {
+      font-size: 9px;
+    }
     #step-bar .idle-text {
-      font-size: 11px;
+      font-size: 10px;
     }
     .scenario-intro-title {
-      font-size: 12px;
-    }
-    .scenario-intro-desc {
       font-size: 11px;
     }
-
-    #canvas-area {
-      min-height: 50vh;
+    .scenario-intro-desc {
+      font-size: 10px;
     }
 
+    /* Info panel: bottom sheet, collapsed by default */
     #info-panel {
       position: absolute;
       top: auto;
@@ -394,16 +411,18 @@
       left: 0;
       right: 0;
       width: 100%;
-      max-height: 40vh;
+      max-height: 35vh;
       border-radius: 8px 8px 0 0;
-      padding: 8px;
-      font-size: 11px;
+      padding: 6px;
+      font-size: 10px;
     }
     #info-panel h3 {
-      font-size: 11px;
+      font-size: 10px;
     }
     #info-panel .panel-header {
       cursor: pointer;
+      padding-bottom: 4px;
+      margin-bottom: 4px;
     }
     #info-panel.collapsed {
       width: 100%;
@@ -411,33 +430,166 @@
       max-height: none;
     }
 
+    /* Legend: compact top-left */
     .legend {
       bottom: auto;
       top: 4px;
       left: 4px;
       right: auto;
       flex-wrap: wrap;
-      gap: 6px;
-      font-size: 9px;
-      padding: 4px 8px;
+      gap: 4px;
+      font-size: 8px;
+      padding: 3px 6px;
       max-width: calc(100% - 8px);
     }
     .legend-line {
-      width: 14px;
+      width: 12px;
       height: 2px;
+    }
+
+    /* ── Mobile menu overlay ── */
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 100;
+      background: #0a0e1a;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .mobile-menu.visible {
+      display: flex;
+    }
+    .mobile-menu-title {
+      color: #1e40af;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      text-align: center;
+    }
+    .mobile-menu-subtitle {
+      color: #64748b;
+      font-size: 13px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .mobile-menu-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .mobile-menu-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 8px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: #e2e8f0;
+    }
+    .mobile-menu-item:active {
+      background: #1d4ed8;
+      border-color: #3b82f6;
+      transform: scale(0.96);
+    }
+    .mobile-menu-num {
+      font-size: 10px;
+      color: #60a5fa;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .mobile-menu-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .mobile-menu-footer {
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Landscape hint overlay */
+    #landscape-hint {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 200;
+      background: rgba(10, 14, 26, 0.95);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #e2e8f0;
+      text-align: center;
+      padding: 24px;
+    }
+    #landscape-hint .hint-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      animation: rotate-hint 2s ease-in-out infinite;
+    }
+    #landscape-hint .hint-text {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    #landscape-hint .hint-sub {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+    #landscape-hint .hint-dismiss {
+      margin-top: 20px;
+      padding: 8px 20px;
+      background: #1d4ed8;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    @keyframes rotate-hint {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-90deg); }
+      75% { transform: rotate(-90deg); }
+    }
+  }
+
+  /* Show landscape hint only in portrait on small screens */
+  @media (max-width: 768px) and (orientation: portrait) {
+    #landscape-hint.active {
+      display: flex;
     }
   }
 
   @media (max-width: 480px) {
-    header h1 {
-      font-size: 12px;
-    }
     .btn {
-      padding: 4px 6px;
+      padding: 3px 6px;
       font-size: 10px;
     }
-    #info-panel {
-      max-height: 35vh;
+    .mobile-menu-title {
+      font-size: 15px;
+    }
+    .mobile-menu-grid {
+      gap: 8px;
+    }
+    .mobile-menu-item {
+      padding: 10px 6px;
+    }
+    .mobile-menu-label {
+      font-size: 11px;
     }
   }
 
@@ -454,28 +606,83 @@
       </div>
     </div>
     <div class="controls">
-      <button class="btn primary" id="btn-dpget" onclick="showScenarioIntro('dpGet')">dpGet</button>
-      <button class="btn primary" id="btn-dpset" onclick="showScenarioIntro('dpSet')">dpSet</button>
-      <button class="btn primary" id="btn-dpconnect" onclick="showScenarioIntro('dpConnect')">dpConnect</button>
-      <button class="btn primary" id="btn-plclive" onclick="showScenarioIntro('plcLive')">PLC Live</button>
-      <button class="btn primary" id="btn-cycle" onclick="showScenarioIntro('cycle')">Full cycle</button>
-      <button class="btn primary" id="btn-history" onclick="showScenarioIntro('history')">History read</button>
-      <button class="btn primary" id="btn-kafka" onclick="showScenarioIntro('kafka')">Node.js &rarr; Kafka</button>
-      <button class="btn primary" id="btn-mcp" onclick="showScenarioIntro('mcp')">Claude AI (MCP)</button>
-      <button class="btn primary" id="btn-uns" onclick="showScenarioIntro('uns')">UNS (MQTT)</button>
-      <button class="btn" id="btn-prev" onclick="prevStep()" disabled>&#9666; Previous</button>
-      <button class="btn primary" id="btn-start-scenario" onclick="startPendingScenario()" style="display:none">Start &#9656;</button>
-      <button class="btn" id="btn-step" onclick="nextStep()" disabled>Next &#9656;</button>
-      <button class="btn" id="btn-reset" onclick="resetAll()">Reset</button>
-      <button class="btn" id="btn-3d" onclick="toggle3D()">3D</button>
-      <div class="lang-toggle">
-        <button class="lang-btn active" id="lang-fr" onclick="setLang('fr')">FR</button>
-        <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
+      <div class="scenario-buttons" id="scenario-buttons">
+        <button class="btn primary" id="btn-dpget" onclick="showScenarioIntro('dpGet')">dpGet</button>
+        <button class="btn primary" id="btn-dpset" onclick="showScenarioIntro('dpSet')">dpSet</button>
+        <button class="btn primary" id="btn-dpconnect" onclick="showScenarioIntro('dpConnect')">dpConnect</button>
+        <button class="btn primary" id="btn-plclive" onclick="showScenarioIntro('plcLive')">PLC Live</button>
+        <button class="btn primary" id="btn-cycle" onclick="showScenarioIntro('cycle')">Full cycle</button>
+        <button class="btn primary" id="btn-history" onclick="showScenarioIntro('history')">History read</button>
+        <button class="btn primary" id="btn-kafka" onclick="showScenarioIntro('kafka')">Node.js &rarr; Kafka</button>
+        <button class="btn primary" id="btn-mcp" onclick="showScenarioIntro('mcp')">Claude AI (MCP)</button>
+        <button class="btn primary" id="btn-uns" onclick="showScenarioIntro('uns')">UNS (MQTT)</button>
       </div>
-      <div class="speed-control">
-        <span>Speed</span>
-        <input type="range" id="speed" min="1" max="5" value="3" step="1">
-        <span id="speed-label">&times;1</span>
+      <div class="nav-buttons" id="nav-buttons">
+        <button class="btn" id="btn-scenarios-mobile" onclick="showMobileMenu()" style="display:none">Scenarios</button>
+        <button class="btn" id="btn-prev" onclick="prevStep()" disabled>&#9666; Previous</button>
+        <button class="btn primary" id="btn-start-scenario" onclick="startPendingScenario()" style="display:none">Start &#9656;</button>
+        <button class="btn" id="btn-step" onclick="nextStep()" disabled>Next &#9656;</button>
+        <button class="btn" id="btn-reset" onclick="resetAll()">Reset</button>
+        <button class="btn" id="btn-3d" onclick="toggle3D()">3D</button>
+        <div class="lang-toggle">
+          <button class="lang-btn active" id="lang-fr" onclick="setLang('fr')">FR</button>
+          <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
+        </div>
+        <div class="speed-control">
+          <span>Speed</span>
+          <input type="range" id="speed" min="1" max="5" value="3" step="1">
+          <span id="speed-label">&times;1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile scenario menu overlay -->
+    <div id="mobile-menu" class="mobile-menu">
+      <div class="mobile-menu-title">WinCC OA — Message Flow Simulator</div>
+      <div class="mobile-menu-subtitle">Choose a scenario</div>
+      <div class="mobile-menu-grid">
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('dpGet')">
+          <span class="mobile-menu-num">S1</span>
+          <span class="mobile-menu-label">dpGet</span>
+        </button>
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('dpSet')">
+          <span class="mobile-menu-num">S2</span>
+          <span class="mobile-menu-label">dpSet</span>
+        </button>
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('dpConnect')">
+          <span class="mobile-menu-num">S3</span>
+          <span class="mobile-menu-label">dpConnect</span>
+        </button>
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('plcLive')">
+          <span class="mobile-menu-num">S4</span>
+          <span class="mobile-menu-label">PLC Live</span>
+        </button>
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('cycle')">
+          <span class="mobile-menu-num">S5</span>
+          <span class="mobile-menu-label">Full cycle</span>
+        </button>
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('history')">
+          <span class="mobile-menu-num">S6</span>
+          <span class="mobile-menu-label">History read</span>
+        </button>
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('kafka')">
+          <span class="mobile-menu-num">S7</span>
+          <span class="mobile-menu-label">Node.js &rarr; Kafka</span>
+        </button>
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('mcp')">
+          <span class="mobile-menu-num">S8</span>
+          <span class="mobile-menu-label">Claude AI (MCP)</span>
+        </button>
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('uns')">
+          <span class="mobile-menu-num">S9</span>
+          <span class="mobile-menu-label">UNS (MQTT)</span>
+        </button>
+      </div>
+      <div class="mobile-menu-footer">
+        <div class="lang-toggle">
+          <button class="lang-btn active" id="lang-fr-mobile" onclick="setLang('fr')">FR</button>
+          <button class="lang-btn" id="lang-en-mobile" onclick="setLang('en')">EN</button>
+        </div>
       </div>
     </div>
   </header>
@@ -523,6 +730,14 @@
       <div class="legend-item"><div class="legend-line" style="background:#22d3ee"></div> MQTT (UNS)</div>
     </div>
   </div>
+</div>
+
+<!-- Landscape hint for mobile portrait -->
+<div id="landscape-hint">
+  <div class="hint-icon">&#8634;</div>
+  <div class="hint-text">Rotate your device to landscape</div>
+  <div class="hint-sub">This diagram is best viewed in landscape orientation</div>
+  <button class="hint-dismiss" onclick="dismissLandscapeHint()">Continue anyway</button>
 </div>
 
 <script>
@@ -679,9 +894,9 @@ function isManagerVisible(id) {
 }
 
 function layoutManagers(w, h) {
-  // Scale factor for small screens
-  var isMobile = w < 768;
-  var scale = isMobile ? Math.max(w / 900, 0.45) : 1;
+  // Scale factor for small screens (use both dimensions to ensure fit)
+  var isMobile = w < 768 || (w < 1024 && h < 500);
+  var scale = isMobile ? Math.max(Math.min(w / 900, h / 450), 0.38) : 1;
   mgrW = Math.round(baseMgrW * scale);
   mgrH = Math.round(baseMgrH * scale);
 
@@ -690,7 +905,7 @@ function layoutManagers(w, h) {
   var cx = (w - panelOffset) / 2;
   var cy = h / 2;
   var rx = Math.min(cx * 0.50, 240 * scale);
-  var ry = Math.min(cy * 0.52, 160 * scale);
+  var ry = Math.min(cy * 0.48, 150 * scale);
 
   // EV center
   mgrPos.ev = { x: cx, y: cy - 16 * scale };
@@ -863,7 +1078,8 @@ function drawRoundedRect(x, y, w, h, r) {
 }
 
 function getCanvasScale() {
-  return canvas.width < 768 ? Math.max(canvas.width / 900, 0.45) : 1;
+  var isMobile = canvas.width < 768 || (canvas.width < 1024 && canvas.height < 500);
+  return isMobile ? Math.max(Math.min(canvas.width / 900, canvas.height / 450), 0.38) : 1;
 }
 
 function drawManager(id) {
@@ -1648,13 +1864,96 @@ function togglePanel() {
   document.addEventListener('touchend', function() { isDragging = false; });
 })();
 
+// ── Mobile detection ──
+function isMobileView() {
+  return window.innerWidth <= 768;
+}
+
 // Auto-collapse info panel on mobile
-if (window.innerWidth <= 768) {
+if (isMobileView()) {
   var panel = document.getElementById('info-panel');
   var btn = document.getElementById('panel-toggle-btn');
   panel.classList.add('collapsed');
   btn.innerHTML = '+';
 }
+
+// ── Mobile menu ──
+function showMobileMenu() {
+  if (!isMobileView()) return;
+  document.getElementById('mobile-menu').classList.add('visible');
+}
+
+function hideMobileMenu() {
+  document.getElementById('mobile-menu').classList.remove('visible');
+}
+
+function mobileSelectScenario(name) {
+  hideMobileMenu();
+  showScenarioIntro(name);
+}
+
+// Show mobile menu on load (mobile only)
+if (isMobileView()) {
+  document.getElementById('mobile-menu').classList.add('visible');
+  document.getElementById('btn-scenarios-mobile').style.display = '';
+}
+
+// ── Landscape hint ──
+var landscapeHintDismissed = false;
+
+function dismissLandscapeHint() {
+  landscapeHintDismissed = true;
+  document.getElementById('landscape-hint').classList.remove('active');
+}
+
+function checkLandscapeHint() {
+  if (landscapeHintDismissed) return;
+  var hint = document.getElementById('landscape-hint');
+  if (!hint) return;
+  // Only show on mobile-sized screens in portrait
+  if (isMobileView() && window.innerHeight > window.innerWidth) {
+    hint.classList.add('active');
+  } else {
+    hint.classList.remove('active');
+  }
+}
+
+// Check on load and orientation change
+if (isMobileView()) {
+  checkLandscapeHint();
+}
+window.addEventListener('resize', function() {
+  checkLandscapeHint();
+});
+if (screen && screen.orientation) {
+  screen.orientation.addEventListener('change', checkLandscapeHint);
+}
+
+// Override resetAll to show mobile menu again on mobile
+var _originalResetAll = typeof resetAll === 'function' ? resetAll : null;
+function resetAllMobile() {
+  if (_originalResetAll) _originalResetAll();
+  if (isMobileView()) {
+    showMobileMenu();
+  }
+}
+// Rebind reset button for mobile
+(function() {
+  var resetBtn = document.getElementById('btn-reset');
+  if (resetBtn) {
+    resetBtn.setAttribute('onclick', 'resetAllMobile()');
+  }
+})();
+
+// Sync mobile lang buttons with desktop ones
+var _originalSetLang = setLang;
+setLang = function(lang) {
+  _originalSetLang(lang);
+  var frMobile = document.getElementById('lang-fr-mobile');
+  var enMobile = document.getElementById('lang-en-mobile');
+  if (frMobile) frMobile.className = 'lang-btn' + (lang === 'fr' ? ' active' : '');
+  if (enMobile) enMobile.className = 'lang-btn' + (lang === 'en' ? ' active' : '');
+};
 
 // Initialize language UI
 updateStaticUI();

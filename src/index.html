@@ -25,28 +25,83 @@
       </div>
     </div>
     <div class="controls">
-      <button class="btn primary" id="btn-dpget" onclick="showScenarioIntro('dpGet')">dpGet</button>
-      <button class="btn primary" id="btn-dpset" onclick="showScenarioIntro('dpSet')">dpSet</button>
-      <button class="btn primary" id="btn-dpconnect" onclick="showScenarioIntro('dpConnect')">dpConnect</button>
-      <button class="btn primary" id="btn-plclive" onclick="showScenarioIntro('plcLive')">PLC Live</button>
-      <button class="btn primary" id="btn-cycle" onclick="showScenarioIntro('cycle')">Full cycle</button>
-      <button class="btn primary" id="btn-history" onclick="showScenarioIntro('history')">History read</button>
-      <button class="btn primary" id="btn-kafka" onclick="showScenarioIntro('kafka')">Node.js &rarr; Kafka</button>
-      <button class="btn primary" id="btn-mcp" onclick="showScenarioIntro('mcp')">Claude AI (MCP)</button>
-      <button class="btn primary" id="btn-uns" onclick="showScenarioIntro('uns')">UNS (MQTT)</button>
-      <button class="btn" id="btn-prev" onclick="prevStep()" disabled>&#9666; Previous</button>
-      <button class="btn primary" id="btn-start-scenario" onclick="startPendingScenario()" style="display:none">Start &#9656;</button>
-      <button class="btn" id="btn-step" onclick="nextStep()" disabled>Next &#9656;</button>
-      <button class="btn" id="btn-reset" onclick="resetAll()">Reset</button>
-      <button class="btn" id="btn-3d" onclick="toggle3D()">3D</button>
-      <div class="lang-toggle">
-        <button class="lang-btn active" id="lang-fr" onclick="setLang('fr')">FR</button>
-        <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
+      <div class="scenario-buttons" id="scenario-buttons">
+        <button class="btn primary" id="btn-dpget" onclick="showScenarioIntro('dpGet')">dpGet</button>
+        <button class="btn primary" id="btn-dpset" onclick="showScenarioIntro('dpSet')">dpSet</button>
+        <button class="btn primary" id="btn-dpconnect" onclick="showScenarioIntro('dpConnect')">dpConnect</button>
+        <button class="btn primary" id="btn-plclive" onclick="showScenarioIntro('plcLive')">PLC Live</button>
+        <button class="btn primary" id="btn-cycle" onclick="showScenarioIntro('cycle')">Full cycle</button>
+        <button class="btn primary" id="btn-history" onclick="showScenarioIntro('history')">History read</button>
+        <button class="btn primary" id="btn-kafka" onclick="showScenarioIntro('kafka')">Node.js &rarr; Kafka</button>
+        <button class="btn primary" id="btn-mcp" onclick="showScenarioIntro('mcp')">Claude AI (MCP)</button>
+        <button class="btn primary" id="btn-uns" onclick="showScenarioIntro('uns')">UNS (MQTT)</button>
       </div>
-      <div class="speed-control">
-        <span>Speed</span>
-        <input type="range" id="speed" min="1" max="5" value="3" step="1">
-        <span id="speed-label">&times;1</span>
+      <div class="nav-buttons" id="nav-buttons">
+        <button class="btn" id="btn-scenarios-mobile" onclick="showMobileMenu()" style="display:none">Scenarios</button>
+        <button class="btn" id="btn-prev" onclick="prevStep()" disabled>&#9666; Previous</button>
+        <button class="btn primary" id="btn-start-scenario" onclick="startPendingScenario()" style="display:none">Start &#9656;</button>
+        <button class="btn" id="btn-step" onclick="nextStep()" disabled>Next &#9656;</button>
+        <button class="btn" id="btn-reset" onclick="resetAll()">Reset</button>
+        <button class="btn" id="btn-3d" onclick="toggle3D()">3D</button>
+        <div class="lang-toggle">
+          <button class="lang-btn active" id="lang-fr" onclick="setLang('fr')">FR</button>
+          <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
+        </div>
+        <div class="speed-control">
+          <span>Speed</span>
+          <input type="range" id="speed" min="1" max="5" value="3" step="1">
+          <span id="speed-label">&times;1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile scenario menu overlay -->
+    <div id="mobile-menu" class="mobile-menu">
+      <div class="mobile-menu-title">WinCC OA — Message Flow Simulator</div>
+      <div class="mobile-menu-subtitle">Choose a scenario</div>
+      <div class="mobile-menu-grid">
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('dpGet')">
+          <span class="mobile-menu-num">S1</span>
+          <span class="mobile-menu-label">dpGet</span>
+        </button>
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('dpSet')">
+          <span class="mobile-menu-num">S2</span>
+          <span class="mobile-menu-label">dpSet</span>
+        </button>
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('dpConnect')">
+          <span class="mobile-menu-num">S3</span>
+          <span class="mobile-menu-label">dpConnect</span>
+        </button>
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('plcLive')">
+          <span class="mobile-menu-num">S4</span>
+          <span class="mobile-menu-label">PLC Live</span>
+        </button>
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('cycle')">
+          <span class="mobile-menu-num">S5</span>
+          <span class="mobile-menu-label">Full cycle</span>
+        </button>
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('history')">
+          <span class="mobile-menu-num">S6</span>
+          <span class="mobile-menu-label">History read</span>
+        </button>
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('kafka')">
+          <span class="mobile-menu-num">S7</span>
+          <span class="mobile-menu-label">Node.js &rarr; Kafka</span>
+        </button>
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('mcp')">
+          <span class="mobile-menu-num">S8</span>
+          <span class="mobile-menu-label">Claude AI (MCP)</span>
+        </button>
+        <button class="mobile-menu-item" onclick="mobileSelectScenario('uns')">
+          <span class="mobile-menu-num">S9</span>
+          <span class="mobile-menu-label">UNS (MQTT)</span>
+        </button>
+      </div>
+      <div class="mobile-menu-footer">
+        <div class="lang-toggle">
+          <button class="lang-btn active" id="lang-fr-mobile" onclick="setLang('fr')">FR</button>
+          <button class="lang-btn" id="lang-en-mobile" onclick="setLang('en')">EN</button>
+        </div>
       </div>
     </div>
   </header>
@@ -94,6 +149,14 @@
       <div class="legend-item"><div class="legend-line" style="background:#22d3ee"></div> MQTT (UNS)</div>
     </div>
   </div>
+</div>
+
+<!-- Landscape hint for mobile portrait -->
+<div id="landscape-hint">
+  <div class="hint-icon">&#8634;</div>
+  <div class="hint-text">Rotate your device to landscape</div>
+  <div class="hint-sub">This diagram is best viewed in landscape orientation</div>
+  <button class="hint-dismiss" onclick="dismissLandscapeHint()">Continue anyway</button>
 </div>
 
 <!-- __JS_APP__ -->
