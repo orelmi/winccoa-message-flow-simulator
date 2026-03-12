@@ -24,6 +24,7 @@ var managers = {
 // positions computed on resize
 var mgrPos = {};
 var mgrW = 120, mgrH = 64;
+var baseMgrW = 120, baseMgrH = 64;
 
 // Manager visibility per scenario
 var BASE_MANAGERS = ['plc', 'driver', 'ev', 'dm', 'ctrl_pid', 'ui1', 'ui2', 'nga', 'pgsql'];
@@ -49,13 +50,21 @@ function isManagerVisible(id) {
 }
 
 function layoutManagers(w, h) {
-  var cx = (w - 280) / 2; // account for info panel
+  // Scale factor for small screens
+  var isMobile = w < 768;
+  var scale = isMobile ? Math.max(w / 900, 0.45) : 1;
+  mgrW = Math.round(baseMgrW * scale);
+  mgrH = Math.round(baseMgrH * scale);
+
+  // On mobile, don't subtract info panel width (panel overlays or is collapsed)
+  var panelOffset = isMobile ? 0 : 280;
+  var cx = (w - panelOffset) / 2;
   var cy = h / 2;
-  var rx = Math.min(cx * 0.50, 240);
-  var ry = Math.min(cy * 0.52, 160);
+  var rx = Math.min(cx * 0.50, 240 * scale);
+  var ry = Math.min(cy * 0.52, 160 * scale);
 
   // EV center
-  mgrPos.ev = { x: cx, y: cy - 16 };
+  mgrPos.ev = { x: cx, y: cy - 16 * scale };
   // DM below EV
   mgrPos.dm = { x: cx - rx * 0.45, y: cy + ry * 0.85 };
   // NGA below EV, right side (receives directly from EV)
@@ -63,20 +72,20 @@ function layoutManagers(w, h) {
   // PostgreSQL database — external, below NGA
   mgrPos.pgsql = { x: cx + rx * 0.45, y: cy + ry * 1.55 };
   // Driver left of EV
-  mgrPos.driver = { x: cx - rx, y: cy - 16 };
+  mgrPos.driver = { x: cx - rx, y: cy - 16 * scale };
   // PLC far left (outside WinCC OA boundary)
-  mgrPos.plc = { x: cx - rx * 1.7, y: cy - 16 };
+  mgrPos.plc = { x: cx - rx * 1.7, y: cy - 16 * scale };
   // CTRL top right
   mgrPos.ctrl_pid = { x: cx + rx * 0.6, y: cy - ry * 0.9 };
   // 2 UI Managers stacked vertically on the right
   var uiX = cx + rx * 1.05;
-  var uiSpacing = mgrH + 10;
-  mgrPos.ui1 = { x: uiX, y: cy - uiSpacing / 2 - 4 };
-  mgrPos.ui2 = { x: uiX, y: cy + uiSpacing / 2 + 4 };
+  var uiSpacing = mgrH + 10 * scale;
+  mgrPos.ui1 = { x: uiX, y: cy - uiSpacing / 2 - 4 * scale };
+  mgrPos.ui2 = { x: uiX, y: cy + uiSpacing / 2 + 4 * scale };
   // Inside-WinCC-OA extension managers (one per scenario, shared position)
-  var insideExtX = uiX + mgrW + 40;
-  var extSpacing = mgrH + 10;
-  var extTopY = cy - extSpacing - 8;
+  var insideExtX = uiX + mgrW + 40 * scale;
+  var extSpacing = mgrH + 10 * scale;
+  var extTopY = cy - extSpacing - 8 * scale;
 
   // JS Manager, MCP Server, MQTT Publisher share the same inside position
   mgrPos.js_mgr = { x: insideExtX, y: cy };
@@ -84,7 +93,7 @@ function layoutManagers(w, h) {
   mgrPos.mqtt_pub = { x: insideExtX, y: cy };
 
   // Outside-WinCC-OA managers (further right, stacked vertically)
-  var outsideExtX = insideExtX + mgrW + 100;
+  var outsideExtX = insideExtX + mgrW + (isMobile ? 40 : 100);
 
   // Kafka scenario: Broker Kafka, Predictive Maintenance
   mgrPos.kafka = { x: outsideExtX, y: extTopY };
@@ -96,7 +105,7 @@ function layoutManagers(w, h) {
 
   // UNS scenario: MQTT Broker on top, MES and Cloud Historian side by side below
   mgrPos.mqtt_broker = { x: outsideExtX, y: extTopY };
-  var unsSubY = extTopY + extSpacing + 16;
-  mgrPos.uns_mes = { x: outsideExtX - mgrW/2 - 16, y: unsSubY };
-  mgrPos.uns_hist = { x: outsideExtX + mgrW/2 + 16, y: unsSubY };
+  var unsSubY = extTopY + extSpacing + 16 * scale;
+  mgrPos.uns_mes = { x: outsideExtX - mgrW/2 - 16 * scale, y: unsSubY };
+  mgrPos.uns_hist = { x: outsideExtX + mgrW/2 + 16 * scale, y: unsSubY };
 }
