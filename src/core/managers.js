@@ -50,9 +50,9 @@ function isManagerVisible(id) {
 }
 
 function layoutManagers(w, h) {
-  // Scale factor for small screens
-  var isMobile = w < 768;
-  var scale = isMobile ? Math.max(w / 900, 0.45) : 1;
+  // Scale factor for small screens (use both dimensions to ensure fit)
+  var isMobile = w < 768 || (w < 1024 && h < 500);
+  var scale = isMobile ? Math.max(Math.min(w / 900, h / 450), 0.38) : 1;
   mgrW = Math.round(baseMgrW * scale);
   mgrH = Math.round(baseMgrH * scale);
 
@@ -61,7 +61,7 @@ function layoutManagers(w, h) {
   var cx = (w - panelOffset) / 2;
   var cy = h / 2;
   var rx = Math.min(cx * 0.50, 240 * scale);
-  var ry = Math.min(cy * 0.52, 160 * scale);
+  var ry = Math.min(cy * 0.48, 150 * scale);
 
   // EV center
   mgrPos.ev = { x: cx, y: cy - 16 * scale };

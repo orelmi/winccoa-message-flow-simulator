@@ -80,7 +80,8 @@ function drawRoundedRect(x, y, w, h, r) {
 }
 
 function getCanvasScale() {
-  return canvas.width < 768 ? Math.max(canvas.width / 900, 0.45) : 1;
+  var isMobile = canvas.width < 768 || (canvas.width < 1024 && canvas.height < 500);
+  return isMobile ? Math.max(Math.min(canvas.width / 900, canvas.height / 450), 0.38) : 1;
 }
 
 function drawManager(id) {
