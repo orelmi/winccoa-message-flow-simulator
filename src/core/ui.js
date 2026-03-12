@@ -82,11 +82,13 @@ function mobileSelectScenario(name) {
   hideMobileMenu();
   showScenarioIntro(name);
   syncMobileToolbar();
+  checkLandscapeHint();
 }
 
 function mobileBackToMenu() {
   resetAll();
   showMobileMenu();
+  checkLandscapeHint();
 }
 
 // Show mobile menu on load (mobile only)
@@ -153,7 +155,9 @@ function checkLandscapeHint() {
   if (landscapeHintDismissed) return;
   var hint = document.getElementById('landscape-hint');
   if (!hint) return;
-  if (isMobileView() && window.innerHeight > window.innerWidth) {
+  var menu = document.getElementById('mobile-menu');
+  var menuVisible = menu && menu.classList.contains('visible');
+  if (isMobileView() && window.innerHeight > window.innerWidth && !menuVisible) {
     hint.classList.add('active');
   } else {
     hint.classList.remove('active');
