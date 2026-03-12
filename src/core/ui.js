@@ -81,13 +81,65 @@ function hideMobileMenu() {
 function mobileSelectScenario(name) {
   hideMobileMenu();
   showScenarioIntro(name);
+  syncMobileToolbar();
+}
+
+function mobileBackToMenu() {
+  resetAll();
+  showMobileMenu();
 }
 
 // Show mobile menu on load (mobile only)
 if (isMobileView()) {
   document.getElementById('mobile-menu').classList.add('visible');
-  document.getElementById('btn-scenarios-mobile').style.display = '';
 }
+
+// ── Sync mobile toolbar buttons with desktop buttons ──
+function syncMobileToolbar() {
+  if (!isMobileView()) return;
+  var prev = document.getElementById('btn-prev');
+  var step = document.getElementById('btn-step');
+  var start = document.getElementById('btn-start-scenario');
+
+  var prevM = document.getElementById('btn-prev-mobile');
+  var stepM = document.getElementById('btn-step-mobile');
+  var startM = document.getElementById('btn-start-mobile');
+
+  if (prevM) prevM.disabled = prev.disabled;
+  if (stepM) {
+    stepM.disabled = step.disabled;
+    stepM.innerHTML = step.textContent.trim() === '\u2713' ? '\u2713' : '&#9656;';
+  }
+  if (startM) startM.style.display = start.style.display;
+}
+
+// Observe desktop button changes to sync mobile toolbar
+(function() {
+  if (!isMobileView()) return;
+
+  var observer = new MutationObserver(function() { syncMobileToolbar(); });
+  var config = { attributes: true, attributeFilter: ['disabled', 'style'] };
+
+  var ids = ['btn-prev', 'btn-step', 'btn-start-scenario'];
+  ids.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) observer.observe(el, config);
+  });
+
+  // Also sync the speed slider
+  var speedMobile = document.getElementById('speed-mobile');
+  var speedDesktop = document.getElementById('speed');
+  if (speedMobile && speedDesktop) {
+    speedMobile.value = speedDesktop.value;
+    speedMobile.addEventListener('input', function() {
+      speedDesktop.value = speedMobile.value;
+      speedDesktop.dispatchEvent(new Event('input'));
+    });
+    speedDesktop.addEventListener('input', function() {
+      speedMobile.value = speedDesktop.value;
+    });
+  }
+})();
 
 // ── Landscape hint ──
 var landscapeHintDismissed = false;
@@ -101,7 +153,6 @@ function checkLandscapeHint() {
   if (landscapeHintDismissed) return;
   var hint = document.getElementById('landscape-hint');
   if (!hint) return;
-  // Only show on mobile-sized screens in portrait
   if (isMobileView() && window.innerHeight > window.innerWidth) {
     hint.classList.add('active');
   } else {
@@ -109,7 +160,6 @@ function checkLandscapeHint() {
   }
 }
 
-// Check on load and orientation change
 if (isMobileView()) {
   checkLandscapeHint();
 }
@@ -128,15 +178,8 @@ function resetAllMobile() {
     showMobileMenu();
   }
 }
-// Rebind reset button for mobile
-(function() {
-  var resetBtn = document.getElementById('btn-reset');
-  if (resetBtn) {
-    resetBtn.setAttribute('onclick', 'resetAllMobile()');
-  }
-})();
 
-// Sync mobile lang buttons with desktop ones
+// Sync mobile lang buttons with desktop ones + update tile descriptions
 var _originalSetLang = setLang;
 setLang = function(lang) {
   _originalSetLang(lang);
@@ -144,7 +187,20 @@ setLang = function(lang) {
   var enMobile = document.getElementById('lang-en-mobile');
   if (frMobile) frMobile.className = 'lang-btn' + (lang === 'fr' ? ' active' : '');
   if (enMobile) enMobile.className = 'lang-btn' + (lang === 'en' ? ' active' : '');
+
+  // Update tile descriptions and menu subtitle
+  var subtitle = document.getElementById('mobile-menu-subtitle');
+  if (subtitle) subtitle.textContent = t('menuSubtitle');
+  var scenarios = ['dpGet', 'dpSet', 'dpConnect', 'plcLive', 'cycle', 'history', 'kafka', 'mcp', 'uns'];
+  scenarios.forEach(function(s) {
+    var el = document.getElementById('tile-desc-' + s);
+    if (el) el.textContent = t('tile_' + s);
+  });
 };
 
 // Initialize language UI
 updateStaticUI();
+// Apply detected language to mobile elements
+if (isMobileView()) {
+  setLang(currentLang);
+}
