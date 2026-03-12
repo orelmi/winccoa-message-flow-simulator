@@ -374,29 +374,9 @@
       font-size: 10px;
     }
 
-    /* Info panel: bottom sheet above toolbar, collapsed by default */
+    /* Hide info panel (subscription table) on mobile */
     #info-panel {
-      position: absolute;
-      top: auto;
-      bottom: 40px;
-      left: 0;
-      right: 0;
-      width: 100%;
-      max-height: 35vh;
-      border-radius: 8px 8px 0 0;
-      padding: 6px;
-      font-size: 10px;
-    }
-    #info-panel h3 { font-size: 10px; }
-    #info-panel .panel-header {
-      cursor: pointer;
-      padding-bottom: 4px;
-      margin-bottom: 4px;
-    }
-    #info-panel.collapsed {
-      width: 100%;
-      min-width: unset;
-      max-height: none;
+      display: none !important;
     }
 
     /* Legend: hide on mobile to maximize diagram space */
@@ -544,20 +524,66 @@
 
   /* Mobile landscape: maximize diagram area */
   @media (max-width: 1024px) and (max-height: 500px) {
+    body {
+      overflow: hidden;
+      height: 100vh;
+      height: 100dvh;
+    }
+    #app {
+      height: 100vh;
+      height: 100dvh;
+    }
+
     /* Hide desktop header in landscape on small devices */
     header {
       display: none !important;
     }
 
-    /* Show mobile toolbar */
+    /* Floating mobile toolbar at bottom — full positioning */
     .mobile-toolbar {
       display: flex !important;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: rgba(17, 24, 39, 0.95);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid #1e3a5f;
       padding: 2px 6px;
+      padding-bottom: max(2px, env(safe-area-inset-bottom));
+      align-items: center;
       gap: 3px;
     }
     .mobile-toolbar .btn {
       padding: 3px 8px;
       font-size: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #fff;
+      color: #334155;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .mobile-toolbar .btn.primary {
+      background: #1d4ed8;
+      border-color: #3b82f6;
+      color: #fff;
+    }
+    .mobile-toolbar .speed-control {
+      margin-left: auto;
+      border-left: 1px solid #334155;
+      padding-left: 6px;
+      font-size: 10px;
+      color: #9ca3af;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .mobile-toolbar .speed-control input[type=range] {
+      width: 40px;
+      accent-color: #3b82f6;
     }
 
     /* Mobile menu available in landscape too */
@@ -579,8 +605,16 @@
       backdrop-filter: blur(4px);
       border-bottom: 1px solid rgba(30, 58, 95, 0.5);
     }
-
-    /* Hide idle text in landscape to save space */
+    #step-bar .step-num {
+      font-size: 10px;
+      padding: 2px 6px;
+    }
+    #step-bar .step-text {
+      font-size: 10px;
+    }
+    #step-bar .step-text code {
+      font-size: 9px;
+    }
     #step-bar .idle-text {
       font-size: 9px;
     }
@@ -594,22 +628,9 @@
     /* Legend: hide to maximize diagram space */
     .legend { display: none; }
 
-    /* Info panel: smaller in landscape */
+    /* Hide info panel on mobile landscape too */
     #info-panel {
-      position: absolute;
-      top: auto;
-      bottom: 28px;
-      left: 0;
-      right: 0;
-      width: 100%;
-      max-height: 30vh;
-      border-radius: 8px 8px 0 0;
-      padding: 6px;
-      font-size: 10px;
-    }
-    #info-panel.collapsed {
-      width: 100%;
-      min-width: unset;
+      display: none !important;
     }
   }
 
