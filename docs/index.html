@@ -558,14 +558,25 @@
 
   /* Mobile landscape: maximize diagram area */
   @media (max-width: 1024px) and (max-height: 500px) {
-    /* Compact toolbar */
+    /* Hide desktop header in landscape on small devices */
+    header {
+      display: none !important;
+    }
+
+    /* Show mobile toolbar */
     .mobile-toolbar {
+      display: flex !important;
       padding: 2px 6px;
       gap: 3px;
     }
     .mobile-toolbar .btn {
       padding: 3px 8px;
       font-size: 10px;
+    }
+
+    /* Mobile menu available in landscape too */
+    .mobile-menu.visible {
+      display: flex;
     }
 
     /* Overlay step-bar on canvas instead of separate grid row */
@@ -594,9 +605,25 @@
       font-size: 9px;
     }
 
+    /* Legend: hide to maximize diagram space */
+    .legend { display: none; }
+
     /* Info panel: smaller in landscape */
     #info-panel {
+      position: absolute;
+      top: auto;
+      bottom: 28px;
+      left: 0;
+      right: 0;
+      width: 100%;
       max-height: 30vh;
+      border-radius: 8px 8px 0 0;
+      padding: 6px;
+      font-size: 10px;
+    }
+    #info-panel.collapsed {
+      width: 100%;
+      min-width: unset;
     }
   }
 
@@ -1961,11 +1988,13 @@ function mobileSelectScenario(name) {
   hideMobileMenu();
   showScenarioIntro(name);
   syncMobileToolbar();
+  checkLandscapeHint();
 }
 
 function mobileBackToMenu() {
   resetAll();
   showMobileMenu();
+  checkLandscapeHint();
 }
 
 // Show mobile menu on load (mobile only)
@@ -2032,7 +2061,9 @@ function checkLandscapeHint() {
   if (landscapeHintDismissed) return;
   var hint = document.getElementById('landscape-hint');
   if (!hint) return;
-  if (isMobileView() && window.innerHeight > window.innerWidth) {
+  var menu = document.getElementById('mobile-menu');
+  var menuVisible = menu && menu.classList.contains('visible');
+  if (isMobileView() && window.innerHeight > window.innerWidth && !menuVisible) {
     hint.classList.add('active');
   } else {
     hint.classList.remove('active');
