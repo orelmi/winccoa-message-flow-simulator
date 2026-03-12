@@ -305,7 +305,6 @@
     display: contents;
   }
   .mobile-menu { display: none; }
-  #btn-scenarios-mobile { display: none !important; }
   #landscape-hint { display: none; }
 
   /* ── Mobile responsive ── */
@@ -320,68 +319,54 @@
       height: 100dvh;
     }
 
-    /* Hide desktop header entirely when mobile menu is shown */
+    /* Hide entire desktop header on mobile — replaced by floating toolbar */
     header {
-      padding: 4px 8px;
-      gap: 4px;
-    }
-    .header-logo {
-      height: 24px !important;
-    }
-    header h1 {
-      font-size: 12px;
-    }
-    header .subtitle {
-      display: none;
-    }
-
-    /* Hide scenario buttons from header on mobile */
-    .scenario-buttons {
       display: none !important;
     }
-    .nav-buttons {
-      display: flex;
+
+    /* Floating mobile toolbar (visible only when diagram is shown) */
+    .mobile-toolbar {
+      display: flex !important;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: rgba(17, 24, 39, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid #1e3a5f;
+      padding: 4px 8px;
       align-items: center;
       gap: 4px;
     }
-    #btn-scenarios-mobile {
-      display: inline-block !important;
-    }
-    .controls {
-      width: 100%;
-      gap: 4px;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    .btn {
-      padding: 4px 8px;
+    .mobile-toolbar .btn {
+      padding: 5px 10px;
       font-size: 11px;
       flex-shrink: 0;
     }
-    .lang-toggle {
-      margin-left: 4px;
+    .mobile-toolbar .btn.primary {
+      background: #1d4ed8;
+      border-color: #3b82f6;
+      color: #fff;
     }
-    .lang-btn {
-      padding: 3px 6px;
-      font-size: 10px;
-    }
-    .speed-control {
-      margin-left: 4px;
+    .mobile-toolbar .speed-control {
+      margin-left: auto;
+      border-left: 1px solid #334155;
       padding-left: 6px;
       font-size: 10px;
+      color: #9ca3af;
     }
-    .speed-control input[type=range] {
-      width: 50px;
+    .mobile-toolbar .speed-control input[type=range] {
+      width: 40px;
+      accent-color: #3b82f6;
     }
-    /* Hide 3D button on mobile */
-    #btn-3d { display: none; }
 
     /* Step bar compact */
     #step-bar {
       padding: 4px 8px;
-      min-height: 28px;
+      min-height: 24px;
       gap: 6px;
+      margin-top: 36px;
     }
     #step-bar .step-num {
       font-size: 10px;
@@ -416,9 +401,7 @@
       padding: 6px;
       font-size: 10px;
     }
-    #info-panel h3 {
-      font-size: 10px;
-    }
+    #info-panel h3 { font-size: 10px; }
     #info-panel .panel-header {
       cursor: pointer;
       padding-bottom: 4px;
@@ -430,93 +413,93 @@
       max-height: none;
     }
 
-    /* Legend: compact top-left */
-    .legend {
-      bottom: auto;
-      top: 4px;
-      left: 4px;
-      right: auto;
-      flex-wrap: wrap;
-      gap: 4px;
-      font-size: 8px;
-      padding: 3px 6px;
-      max-width: calc(100% - 8px);
-    }
-    .legend-line {
-      width: 12px;
-      height: 2px;
-    }
+    /* Legend: hide on mobile to maximize diagram space */
+    .legend { display: none; }
 
-    /* ── Mobile menu overlay ── */
+    /* ── Mobile menu: full-page landing ── */
     .mobile-menu {
       display: none;
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      top: 0; left: 0; right: 0; bottom: 0;
       z-index: 100;
-      background: #0a0e1a;
+      background: linear-gradient(135deg, #0a0e1a 0%, #111827 100%);
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 24px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 20px 16px;
     }
     .mobile-menu.visible {
       display: flex;
     }
-    .mobile-menu-title {
-      color: #1e40af;
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 4px;
+    .mobile-menu-header {
       text-align: center;
+      margin-bottom: 16px;
+      flex-shrink: 0;
+    }
+    .mobile-menu-logo {
+      height: 36px;
+      margin-bottom: 10px;
+    }
+    .mobile-menu-title {
+      color: #e2e8f0;
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 2px;
     }
     .mobile-menu-subtitle {
       color: #64748b;
-      font-size: 13px;
-      margin-bottom: 24px;
-      text-align: center;
+      font-size: 12px;
     }
     .mobile-menu-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
+      gap: 8px;
       width: 100%;
-      max-width: 400px;
+      max-width: 520px;
+      flex: 1;
+      align-content: start;
     }
-    .mobile-menu-item {
+    .mobile-tile {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 14px 8px;
+      align-items: flex-start;
+      padding: 10px;
       background: #1e293b;
       border: 1px solid #334155;
       border-radius: 10px;
       cursor: pointer;
       transition: all 0.15s;
       color: #e2e8f0;
+      text-align: left;
     }
-    .mobile-menu-item:active {
+    .mobile-tile:active {
       background: #1d4ed8;
       border-color: #3b82f6;
-      transform: scale(0.96);
+      transform: scale(0.97);
     }
-    .mobile-menu-num {
-      font-size: 10px;
+    .mobile-tile-num {
+      font-size: 9px;
       color: #60a5fa;
       font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    .mobile-tile-label {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.2;
       margin-bottom: 4px;
     }
-    .mobile-menu-label {
-      font-size: 12px;
-      font-weight: 600;
-      text-align: center;
-      line-height: 1.2;
+    .mobile-tile-desc {
+      font-size: 9px;
+      color: #9ca3af;
+      line-height: 1.3;
     }
     .mobile-menu-footer {
-      margin-top: 24px;
+      margin-top: 12px;
+      flex-shrink: 0;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -574,24 +557,8 @@
     }
   }
 
-  @media (max-width: 480px) {
-    .btn {
-      padding: 3px 6px;
-      font-size: 10px;
-    }
-    .mobile-menu-title {
-      font-size: 15px;
-    }
-    .mobile-menu-grid {
-      gap: 8px;
-    }
-    .mobile-menu-item {
-      padding: 10px 6px;
-    }
-    .mobile-menu-label {
-      font-size: 11px;
-    }
-  }
+  /* Desktop: hide mobile toolbar */
+  .mobile-toolbar { display: none; }
 
 </style>
 </head>
@@ -618,8 +585,7 @@
         <button class="btn primary" id="btn-uns" onclick="showScenarioIntro('uns')">UNS (MQTT)</button>
       </div>
       <div class="nav-buttons" id="nav-buttons">
-        <button class="btn" id="btn-scenarios-mobile" onclick="showMobileMenu()" style="display:none">Scenarios</button>
-        <button class="btn" id="btn-prev" onclick="prevStep()" disabled>&#9666; Previous</button>
+<button class="btn" id="btn-prev" onclick="prevStep()" disabled>&#9666; Previous</button>
         <button class="btn primary" id="btn-start-scenario" onclick="startPendingScenario()" style="display:none">Start &#9656;</button>
         <button class="btn" id="btn-step" onclick="nextStep()" disabled>Next &#9656;</button>
         <button class="btn" id="btn-reset" onclick="resetAll()">Reset</button>
@@ -636,56 +602,19 @@
       </div>
     </div>
 
-    <!-- Mobile scenario menu overlay -->
-    <div id="mobile-menu" class="mobile-menu">
-      <div class="mobile-menu-title">WinCC OA — Message Flow Simulator</div>
-      <div class="mobile-menu-subtitle">Choose a scenario</div>
-      <div class="mobile-menu-grid">
-        <button class="mobile-menu-item" onclick="mobileSelectScenario('dpGet')">
-          <span class="mobile-menu-num">S1</span>
-          <span class="mobile-menu-label">dpGet</span>
-        </button>
-        <button class="mobile-menu-item" onclick="mobileSelectScenario('dpSet')">
-          <span class="mobile-menu-num">S2</span>
-          <span class="mobile-menu-label">dpSet</span>
-        </button>
-        <button class="mobile-menu-item" onclick="mobileSelectScenario('dpConnect')">
-          <span class="mobile-menu-num">S3</span>
-          <span class="mobile-menu-label">dpConnect</span>
-        </button>
-        <button class="mobile-menu-item" onclick="mobileSelectScenario('plcLive')">
-          <span class="mobile-menu-num">S4</span>
-          <span class="mobile-menu-label">PLC Live</span>
-        </button>
-        <button class="mobile-menu-item" onclick="mobileSelectScenario('cycle')">
-          <span class="mobile-menu-num">S5</span>
-          <span class="mobile-menu-label">Full cycle</span>
-        </button>
-        <button class="mobile-menu-item" onclick="mobileSelectScenario('history')">
-          <span class="mobile-menu-num">S6</span>
-          <span class="mobile-menu-label">History read</span>
-        </button>
-        <button class="mobile-menu-item" onclick="mobileSelectScenario('kafka')">
-          <span class="mobile-menu-num">S7</span>
-          <span class="mobile-menu-label">Node.js &rarr; Kafka</span>
-        </button>
-        <button class="mobile-menu-item" onclick="mobileSelectScenario('mcp')">
-          <span class="mobile-menu-num">S8</span>
-          <span class="mobile-menu-label">Claude AI (MCP)</span>
-        </button>
-        <button class="mobile-menu-item" onclick="mobileSelectScenario('uns')">
-          <span class="mobile-menu-num">S9</span>
-          <span class="mobile-menu-label">UNS (MQTT)</span>
-        </button>
-      </div>
-      <div class="mobile-menu-footer">
-        <div class="lang-toggle">
-          <button class="lang-btn active" id="lang-fr-mobile" onclick="setLang('fr')">FR</button>
-          <button class="lang-btn" id="lang-en-mobile" onclick="setLang('en')">EN</button>
-        </div>
-      </div>
-    </div>
   </header>
+
+  <!-- Mobile-only floating toolbar -->
+  <div class="mobile-toolbar" id="mobile-toolbar">
+    <button class="btn" onclick="mobileBackToMenu()">&#9666; Menu</button>
+    <button class="btn primary" id="btn-start-mobile" onclick="startPendingScenario()" style="display:none">Start &#9656;</button>
+    <button class="btn" id="btn-prev-mobile" onclick="prevStep()" disabled>&#9666;</button>
+    <button class="btn" id="btn-step-mobile" onclick="nextStep()" disabled>&#9656;</button>
+    <button class="btn" id="btn-reset-mobile" onclick="resetAllMobile()">Reset</button>
+    <div class="speed-control">
+      <input type="range" id="speed-mobile" min="1" max="5" value="3" step="1">
+    </div>
+  </div>
 
   <div id="step-bar">
     <div class="idle-text" id="idle-msg">Choose a scenario to start the animation.</div>
@@ -732,6 +661,68 @@
   </div>
 </div>
 
+<!-- Mobile scenario menu (full-page landing) -->
+<div id="mobile-menu" class="mobile-menu">
+  <div class="mobile-menu-header">
+    <img src="data:image/png;base64,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" alt="Visuel Concept" class="mobile-menu-logo" id="mobile-logo">
+    <div class="mobile-menu-title">WinCC OA Message Flow Simulator</div>
+    <div class="mobile-menu-subtitle" id="mobile-menu-subtitle">Choose a scenario</div>
+  </div>
+  <div class="mobile-menu-grid" id="mobile-menu-grid">
+    <button class="mobile-tile" onclick="mobileSelectScenario('dpGet')">
+      <span class="mobile-tile-num">S1</span>
+      <span class="mobile-tile-label">dpGet</span>
+      <span class="mobile-tile-desc" id="tile-desc-dpGet">One-time value read from the process image (RAM).</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('dpSet')">
+      <span class="mobile-tile-num">S2</span>
+      <span class="mobile-tile-label">dpSet</span>
+      <span class="mobile-tile-desc" id="tile-desc-dpSet">Operator setpoint write to all subscribed managers.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('dpConnect')">
+      <span class="mobile-tile-num">S3</span>
+      <span class="mobile-tile-label">dpConnect</span>
+      <span class="mobile-tile-desc" id="tile-desc-dpConnect">Publish/subscribe subscription to a datapoint.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('plcLive')">
+      <span class="mobile-tile-num">S4</span>
+      <span class="mobile-tile-label">PLC Live</span>
+      <span class="mobile-tile-desc" id="tile-desc-plcLive">Spontaneous PLC data, real-time push notifications.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('cycle')">
+      <span class="mobile-tile-num">S5</span>
+      <span class="mobile-tile-label">Full cycle</span>
+      <span class="mobile-tile-desc" id="tile-desc-cycle">Full furnace regulation cycle with 2 UIs.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('history')">
+      <span class="mobile-tile-num">S6</span>
+      <span class="mobile-tile-label">History read</span>
+      <span class="mobile-tile-desc" id="tile-desc-history">History read via NGA and PostgreSQL.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('kafka')">
+      <span class="mobile-tile-num">S7</span>
+      <span class="mobile-tile-label">Node.js &rarr; Kafka</span>
+      <span class="mobile-tile-desc" id="tile-desc-kafka">Kafka streaming for predictive maintenance.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('mcp')">
+      <span class="mobile-tile-num">S8</span>
+      <span class="mobile-tile-label">Claude AI (MCP)</span>
+      <span class="mobile-tile-desc" id="tile-desc-mcp">PID optimization via Claude Desktop App and MCP.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('uns')">
+      <span class="mobile-tile-num">S9</span>
+      <span class="mobile-tile-label">UNS (MQTT)</span>
+      <span class="mobile-tile-desc" id="tile-desc-uns">Unified Namespace (UNS) architecture via MQTT.</span>
+    </button>
+  </div>
+  <div class="mobile-menu-footer">
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="lang-fr-mobile" onclick="setLang('fr')">FR</button>
+      <button class="lang-btn" id="lang-en-mobile" onclick="setLang('en')">EN</button>
+    </div>
+  </div>
+</div>
+
 <!-- Landscape hint for mobile portrait -->
 <div id="landscape-hint">
   <div class="hint-icon">&#8634;</div>
@@ -767,6 +758,16 @@ var i18n = {
     mcpBtn: 'Claude AI (MCP)',
     legendKafka: 'Kafka (streaming)',
     legendMcp: 'MCP / Claude AI',
+    menuSubtitle: 'Choisissez un scenario',
+    tile_dpGet: 'Lecture ponctuelle d\'une valeur depuis la process image (RAM).',
+    tile_dpSet: 'Ecriture d\'une consigne operateur vers tous les managers abonnes.',
+    tile_dpConnect: 'Abonnement publish/subscribe a un datapoint.',
+    tile_plcLive: 'Donnees spontanees du PLC, notification push temps reel.',
+    tile_cycle: 'Cycle complet de regulation du four avec 2 UIs.',
+    tile_history: 'Lecture de l\'historique via NGA et PostgreSQL.',
+    tile_kafka: 'Streaming vers Kafka pour maintenance predictive.',
+    tile_mcp: 'Optimisation PID via Claude Desktop App et MCP.',
+    tile_uns: 'Architecture Unified Namespace (UNS) via MQTT.',
     intro_dpGet: 'Lecture ponctuelle d\'une valeur. Le CTRL PID envoie une requete dpGet a l\'Event Manager, qui lit la valeur dans sa process image (RAM) et la retourne immediatement. Aucun abonnement n\'est cree.',
     intro_dpSet: 'Ecriture d\'une consigne operateur. Le UI Panel envoie un dpSet qui traverse l\'Event Manager, la persistance (DM/SQLite), l\'archivage (NGA/PostgreSQL), notifie tous les managers abonnes (CTRL PID, Driver, autres UIs), et descend jusqu\'a l\'automate via OPC UA.',
     intro_dpConnect: 'Abonnement publication/souscription. Le UI Panel s\'abonne a un DPE. L\'Event Manager enregistre l\'abonnement, envoie la valeur initiale, puis notifiera automatiquement le panel a chaque changement futur.',
@@ -800,6 +801,16 @@ var i18n = {
     mcpBtn: 'Claude AI (MCP)',
     legendKafka: 'Kafka (streaming)',
     legendMcp: 'MCP / Claude AI',
+    menuSubtitle: 'Choose a scenario',
+    tile_dpGet: 'One-time value read from the process image (RAM).',
+    tile_dpSet: 'Operator setpoint write to all subscribed managers.',
+    tile_dpConnect: 'Publish/subscribe subscription to a datapoint.',
+    tile_plcLive: 'Spontaneous PLC data, real-time push notifications.',
+    tile_cycle: 'Full furnace regulation cycle with 2 UIs.',
+    tile_history: 'History read via NGA and PostgreSQL.',
+    tile_kafka: 'Kafka streaming for predictive maintenance.',
+    tile_mcp: 'PID optimization via Claude Desktop App and MCP.',
+    tile_uns: 'Unified Namespace (UNS) architecture via MQTT.',
     intro_dpGet: 'One-time value read. CTRL PID sends a dpGet request to the Event Manager, which reads the value from its process image (RAM) and returns it immediately. No subscription is created.',
     intro_dpSet: 'Operator setpoint write. The UI Panel sends a dpSet that traverses the Event Manager, persistence (DM/SQLite), archiving (NGA/PostgreSQL), notifies all subscribed managers (CTRL PID, Driver, other UIs), and reaches the PLC via OPC UA.',
     intro_dpConnect: 'Publish/subscribe subscription. The UI Panel subscribes to a DPE. The Event Manager registers the subscription, sends the initial value, then will automatically notify the panel on every future change.',
@@ -1890,13 +1901,65 @@ function hideMobileMenu() {
 function mobileSelectScenario(name) {
   hideMobileMenu();
   showScenarioIntro(name);
+  syncMobileToolbar();
+}
+
+function mobileBackToMenu() {
+  resetAll();
+  showMobileMenu();
 }
 
 // Show mobile menu on load (mobile only)
 if (isMobileView()) {
   document.getElementById('mobile-menu').classList.add('visible');
-  document.getElementById('btn-scenarios-mobile').style.display = '';
 }
+
+// ── Sync mobile toolbar buttons with desktop buttons ──
+function syncMobileToolbar() {
+  if (!isMobileView()) return;
+  var prev = document.getElementById('btn-prev');
+  var step = document.getElementById('btn-step');
+  var start = document.getElementById('btn-start-scenario');
+
+  var prevM = document.getElementById('btn-prev-mobile');
+  var stepM = document.getElementById('btn-step-mobile');
+  var startM = document.getElementById('btn-start-mobile');
+
+  if (prevM) prevM.disabled = prev.disabled;
+  if (stepM) {
+    stepM.disabled = step.disabled;
+    stepM.innerHTML = step.textContent.trim() === '\u2713' ? '\u2713' : '&#9656;';
+  }
+  if (startM) startM.style.display = start.style.display;
+}
+
+// Observe desktop button changes to sync mobile toolbar
+(function() {
+  if (!isMobileView()) return;
+
+  var observer = new MutationObserver(function() { syncMobileToolbar(); });
+  var config = { attributes: true, attributeFilter: ['disabled', 'style'] };
+
+  var ids = ['btn-prev', 'btn-step', 'btn-start-scenario'];
+  ids.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) observer.observe(el, config);
+  });
+
+  // Also sync the speed slider
+  var speedMobile = document.getElementById('speed-mobile');
+  var speedDesktop = document.getElementById('speed');
+  if (speedMobile && speedDesktop) {
+    speedMobile.value = speedDesktop.value;
+    speedMobile.addEventListener('input', function() {
+      speedDesktop.value = speedMobile.value;
+      speedDesktop.dispatchEvent(new Event('input'));
+    });
+    speedDesktop.addEventListener('input', function() {
+      speedMobile.value = speedDesktop.value;
+    });
+  }
+})();
 
 // ── Landscape hint ──
 var landscapeHintDismissed = false;
@@ -1910,7 +1973,6 @@ function checkLandscapeHint() {
   if (landscapeHintDismissed) return;
   var hint = document.getElementById('landscape-hint');
   if (!hint) return;
-  // Only show on mobile-sized screens in portrait
   if (isMobileView() && window.innerHeight > window.innerWidth) {
     hint.classList.add('active');
   } else {
@@ -1918,7 +1980,6 @@ function checkLandscapeHint() {
   }
 }
 
-// Check on load and orientation change
 if (isMobileView()) {
   checkLandscapeHint();
 }
@@ -1937,15 +1998,8 @@ function resetAllMobile() {
     showMobileMenu();
   }
 }
-// Rebind reset button for mobile
-(function() {
-  var resetBtn = document.getElementById('btn-reset');
-  if (resetBtn) {
-    resetBtn.setAttribute('onclick', 'resetAllMobile()');
-  }
-})();
 
-// Sync mobile lang buttons with desktop ones
+// Sync mobile lang buttons with desktop ones + update tile descriptions
 var _originalSetLang = setLang;
 setLang = function(lang) {
   _originalSetLang(lang);
@@ -1953,10 +2007,23 @@ setLang = function(lang) {
   var enMobile = document.getElementById('lang-en-mobile');
   if (frMobile) frMobile.className = 'lang-btn' + (lang === 'fr' ? ' active' : '');
   if (enMobile) enMobile.className = 'lang-btn' + (lang === 'en' ? ' active' : '');
+
+  // Update tile descriptions and menu subtitle
+  var subtitle = document.getElementById('mobile-menu-subtitle');
+  if (subtitle) subtitle.textContent = t('menuSubtitle');
+  var scenarios = ['dpGet', 'dpSet', 'dpConnect', 'plcLive', 'cycle', 'history', 'kafka', 'mcp', 'uns'];
+  scenarios.forEach(function(s) {
+    var el = document.getElementById('tile-desc-' + s);
+    if (el) el.textContent = t('tile_' + s);
+  });
 };
 
 // Initialize language UI
 updateStaticUI();
+// Apply detected language to mobile elements
+if (isMobileView()) {
+  setLang(currentLang);
+}
 
 // === scenarios/cycle.js ===
 // ── Scenario: Cycle complet ──
