@@ -158,28 +158,27 @@ function layoutLandscape(w, h, scale, isMobile) {
   mgrPos.ui2 = { x: uiX, y: cy + uiSpacing / 2 + 4 * scale };
   // Inside-WinCC-OA extension managers (one per scenario, shared position)
   var insideExtX = uiX + mgrW + 40 * scale;
-  var extSpacing = mgrH + 10 * scale;
-  var extTopY = cy - extSpacing - 8 * scale;
+  var extSpacing = mgrH + 30 * scale;
 
   // JS Manager, MCP Server, MQTT Publisher share the same inside position
   mgrPos.js_mgr = { x: insideExtX, y: cy };
   mgrPos.mcp_server = { x: insideExtX, y: cy };
   mgrPos.mqtt_pub = { x: insideExtX, y: cy };
 
-  // Outside-WinCC-OA managers (further right, stacked vertically)
-  var outsideExtX = insideExtX + mgrW + (isMobile ? 40 : 100);
+  // Outside-WinCC-OA managers (further right, well spaced)
+  var outsideExtX = insideExtX + mgrW + (isMobile ? 60 : 120);
+  var extCenterY = cy;
 
-  // Kafka scenario: Broker Kafka, Predictive Maintenance
-  mgrPos.kafka = { x: outsideExtX, y: extTopY };
-  mgrPos.pred_maint = { x: outsideExtX, y: extTopY + extSpacing };
+  // Kafka scenario: JS Manager center, Broker Kafka above, Predictive Maintenance below
+  mgrPos.kafka = { x: outsideExtX, y: extCenterY - extSpacing };
+  mgrPos.pred_maint = { x: outsideExtX, y: extCenterY + extSpacing };
 
-  // MCP scenario: Claude Desktop App, Anthropic API
-  mgrPos.claude_app = { x: outsideExtX, y: extTopY };
-  mgrPos.anthropic = { x: outsideExtX, y: extTopY + extSpacing };
+  // MCP scenario: Claude Desktop App above center, Anthropic API below
+  mgrPos.claude_app = { x: outsideExtX, y: extCenterY - extSpacing };
+  mgrPos.anthropic = { x: outsideExtX, y: extCenterY + extSpacing };
 
-  // UNS scenario: MQTT Broker on top, MES and Cloud Historian side by side below
-  mgrPos.mqtt_broker = { x: outsideExtX, y: extTopY };
-  var unsSubY = extTopY + extSpacing + 16 * scale;
-  mgrPos.uns_mes = { x: outsideExtX - mgrW/2 - 16 * scale, y: unsSubY };
-  mgrPos.uns_hist = { x: outsideExtX + mgrW/2 + 16 * scale, y: unsSubY };
+  // UNS scenario: MQTT Broker top, MES and Cloud Historian spread below
+  mgrPos.mqtt_broker = { x: outsideExtX, y: extCenterY - extSpacing };
+  mgrPos.uns_mes = { x: outsideExtX - mgrW * 0.7, y: extCenterY + extSpacing };
+  mgrPos.uns_hist = { x: outsideExtX + mgrW * 0.7, y: extCenterY + extSpacing };
 }

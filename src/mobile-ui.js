@@ -129,19 +129,11 @@ function mobileSelectScenario(name) {
   camera.y = camera.targetY;
   camera.zoom = camera.targetZoom;
 
-  // Mark as starting (guards play button)
+  // Wait for user to press play — do not auto-start
   mobileScenarioStarting = true;
   mobileStartingName = name;
-  mobileAutoPlay = true;
+  mobileAutoPlay = false;
   updatePlayPauseIcon();
-
-  // Brief overview, then start scenario in follow mode
-  mobileStartTimer = setTimeout(function() {
-    mobileScenarioStarting = false;
-    mobileStartTimer = null;
-    overviewMode = false;
-    runScenario(name);
-  }, 1200);
 }
 
 // ── Overview toggle ──

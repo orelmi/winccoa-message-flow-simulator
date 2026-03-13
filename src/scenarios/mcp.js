@@ -88,7 +88,10 @@ async function scenarioMcp() {
   await addMessage('nga', 'pgsql', 'SELECT ... FROM history', '#336791', msgDuration() * 0.6);
   glowManager('pgsql', 'rgba(51,103,145', 600);
   await addMessage('pgsql', 'nga', 'result set', '#336791', msgDuration() * 0.6);
-  await addMessage('nga', 'ev', 'history data', COLORS.response, msgDuration() * 0.6);
+  glowManager('nga', 'rgba(236,72,153', 600);
+  await addMessage('nga', 'dm', 'history response', COLORS.response, msgDuration() * 0.6);
+  glowManager('dm', 'rgba(139,92,246', 600);
+  await addMessage('dm', 'ev', 'history data', COLORS.response, msgDuration() * 0.6);
   await addMessage('ev', 'mcp_server', 'response: temp + PID curves', COLORS.response, msgDuration() * 0.8);
   await addMessage('mcp_server', 'claude_app', 'tool_result: [{ts,temp,pid}...]', '#a855f7', msgDuration() * 0.8);
   await wait(150);
