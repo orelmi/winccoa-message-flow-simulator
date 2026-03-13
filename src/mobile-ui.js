@@ -6,6 +6,11 @@ var mobileAutoPlay = true;
 var autoPlayTimer = null;
 var lastScheduledResolve = null;
 
+// ── Startup state ──
+var mobileScenarioStarting = false;
+var mobileStartTimer = null;
+var mobileStartingName = '';
+
 function scheduleAutoAdvance() {
   if (!mobileAutoPlay || !stepResolve || !scenarioRunning) return;
   if (stepResolve === lastScheduledResolve) return;
@@ -22,35 +27,57 @@ function scheduleAutoAdvance() {
 setInterval(function() {
   scheduleAutoAdvance();
   // Update play/pause icon when scenario finishes
-  if (!scenarioRunning && document.getElementById('icon-pause').style.display !== 'none') {
-    updatePlayPauseIcon();
+  if (!scenarioRunning && !mobileScenarioStarting) {
+    if (document.getElementById('icon-pause').style.display !== 'none') {
+      updatePlayPauseIcon();
+    }
+    // Clear persistent messages when scenario ends
+    if (persistentMessages.length > 0) {
+      persistentMessages = [];
+    }
   }
 }, 200);
 
 // ── Play / Pause ──
 function togglePlayPause() {
-  if (!scenarioRunning) {
-    // No scenario running; if menu is hidden, show it
-    if (!document.getElementById('mobile-menu').classList.contains('visible')) {
-      mobileRestart();
+  // During startup overview: skip delay and start scenario immediately
+  if (mobileScenarioStarting) {
+    if (mobileStartTimer) {
+      clearTimeout(mobileStartTimer);
+      mobileStartTimer = null;
+    }
+    mobileScenarioStarting = false;
+    overviewMode = false;
+    mobileAutoPlay = true;
+    updatePlayPauseIcon();
+    runScenario(mobileStartingName);
+    return;
+  }
+
+  // If scenario is running, toggle play/pause
+  if (scenarioRunning) {
+    mobileAutoPlay = !mobileAutoPlay;
+    updatePlayPauseIcon();
+    if (mobileAutoPlay) {
+      lastScheduledResolve = null;
+      scheduleAutoAdvance();
+    } else {
+      if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
+      lastScheduledResolve = null;
     }
     return;
   }
-  mobileAutoPlay = !mobileAutoPlay;
-  updatePlayPauseIcon();
-  if (mobileAutoPlay) {
-    lastScheduledResolve = null;
-    scheduleAutoAdvance();
-  } else {
-    if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
-    lastScheduledResolve = null;
+
+  // Nothing running: go back to menu
+  if (!document.getElementById('mobile-menu').classList.contains('visible')) {
+    mobileRestart();
   }
 }
 
 function updatePlayPauseIcon() {
   var playIcon = document.getElementById('icon-play');
   var pauseIcon = document.getElementById('icon-pause');
-  if (mobileAutoPlay && scenarioRunning) {
+  if ((mobileAutoPlay && scenarioRunning) || mobileScenarioStarting) {
     playIcon.style.display = 'none';
     pauseIcon.style.display = '';
   } else {
@@ -63,9 +90,12 @@ function updatePlayPauseIcon() {
 function mobileRestart() {
   // Cancel timers
   if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
+  if (mobileStartTimer) { clearTimeout(mobileStartTimer); mobileStartTimer = null; }
   lastScheduledResolve = null;
+  mobileScenarioStarting = false;
 
   resetAll();
+  persistentMessages = [];
   mobileAutoPlay = true;
   overviewMode = true;
   updatePlayPauseIcon();
@@ -77,11 +107,13 @@ function mobileRestart() {
 
 // ── Scenario selection ──
 function mobileSelectScenario(name) {
-  // Cancel timers
+  // Cancel any pending timers
   if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
+  if (mobileStartTimer) { clearTimeout(mobileStartTimer); mobileStartTimer = null; }
   lastScheduledResolve = null;
 
   resetAll();
+  persistentMessages = [];
 
   // Hide menu
   document.getElementById('mobile-menu').classList.remove('visible');
@@ -97,12 +129,16 @@ function mobileSelectScenario(name) {
   camera.y = camera.targetY;
   camera.zoom = camera.targetZoom;
 
-  // Start auto-play
+  // Mark as starting (guards play button)
+  mobileScenarioStarting = true;
+  mobileStartingName = name;
   mobileAutoPlay = true;
   updatePlayPauseIcon();
 
   // Brief overview, then start scenario in follow mode
-  setTimeout(function() {
+  mobileStartTimer = setTimeout(function() {
+    mobileScenarioStarting = false;
+    mobileStartTimer = null;
     overviewMode = false;
     runScenario(name);
   }, 1200);
