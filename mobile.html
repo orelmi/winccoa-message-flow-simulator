@@ -1,0 +1,2960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WinCC OA — Message Flow (Mobile)</title>
+<meta name="description" content="Mobile interactive simulator visualizing message flows between WinCC OA managers.">
+<meta name="author" content="Visuel Concept">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0a0e1a;
+  color: #e0e0e0;
+  overflow: hidden;
+  height: 100vh;
+  height: 100dvh;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Layout */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Step bar — fixed at top */
+#step-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 40;
+  background: rgba(17, 24, 39, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(30, 58, 95, 0.5);
+  padding: 6px 12px;
+  padding-top: max(6px, env(safe-area-inset-top));
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#step-bar .step-num {
+  background: #1e3a5f;
+  color: #60a5fa;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+#step-bar .step-text {
+  font-size: 11px;
+  color: #d1d5db;
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+#step-bar .step-text code {
+  background: #1e293b;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Fira Code', monospace;
+  color: #fbbf24;
+  font-size: 10px;
+}
+#step-bar .idle-text {
+  color: #6b7280;
+  font-size: 11px;
+  font-style: italic;
+}
+.scenario-intro-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.scenario-intro-title {
+  font-weight: 700;
+  color: #60a5fa;
+  font-size: 12px;
+}
+.scenario-intro-desc {
+  color: #d1d5db;
+  font-size: 10px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Canvas fills remaining space */
+#canvas-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+canvas {
+  display: block;
+  touch-action: none;
+}
+
+/* Control bar — fixed at bottom */
+#mobile-controls {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 40;
+  background: rgba(17, 24, 39, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-top: 1px solid #1e3a5f;
+  padding: 8px 20px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.ctrl-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #334155;
+  background: #1e293b;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.ctrl-btn:active {
+  transform: scale(0.9);
+  background: #334155;
+}
+.ctrl-btn.active {
+  border-color: #3b82f6;
+  background: rgba(29, 78, 216, 0.3);
+  color: #60a5fa;
+}
+
+/* Play/Pause — larger and prominent */
+.ctrl-play {
+  width: 56px;
+  height: 56px;
+  border-color: #3b82f6;
+  background: #1d4ed8;
+  color: #fff;
+}
+.ctrl-play:active {
+  background: #2563eb;
+}
+
+.ctrl-spacer {
+  flex: 1;
+}
+
+/* ── Full-screen scenario menu ── */
+.mobile-menu {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 100;
+  background: linear-gradient(135deg, #0a0e1a 0%, #111827 100%);
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 16px;
+  padding-top: max(20px, env(safe-area-inset-top));
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
+.mobile-menu.visible {
+  display: flex;
+}
+.mobile-menu-header {
+  text-align: center;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+.mobile-menu-logo {
+  height: 36px;
+  margin-bottom: 10px;
+}
+.mobile-menu-title {
+  color: #e2e8f0;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.mobile-menu-subtitle {
+  color: #64748b;
+  font-size: 12px;
+}
+.mobile-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 520px;
+  flex: 1;
+  align-content: start;
+}
+.mobile-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: #e2e8f0;
+  text-align: left;
+}
+.mobile-tile:active {
+  background: #1d4ed8;
+  border-color: #3b82f6;
+  transform: scale(0.97);
+}
+.mobile-tile-icon {
+  font-size: 22px;
+  color: #60a5fa;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.mobile-tile-num {
+  font-size: 9px;
+  color: #60a5fa;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+.mobile-tile-label {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+.mobile-tile-desc {
+  font-size: 9px;
+  color: #9ca3af;
+  line-height: 1.3;
+}
+.mobile-menu-footer {
+  margin-top: 12px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Language toggle */
+.lang-toggle {
+  display: flex;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.lang-btn {
+  padding: 5px 10px;
+  background: #1e293b;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+.lang-btn:active { background: #334155; }
+.lang-btn.active { background: #1d4ed8; color: #fff; }
+
+/* Speed control */
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #64748b;
+}
+.speed-control input[type=range] {
+  width: 60px;
+  accent-color: #3b82f6;
+}
+
+/* Landscape: shrink controls */
+@media (orientation: landscape) and (max-height: 500px) {
+  #step-bar {
+    padding: 3px 8px;
+    min-height: 24px;
+  }
+  #step-bar .step-num { font-size: 9px; padding: 1px 6px; }
+  #step-bar .step-text { font-size: 9px; -webkit-line-clamp: 2; }
+  #step-bar .idle-text { font-size: 9px; }
+  .scenario-intro-title { font-size: 10px; }
+  .scenario-intro-desc { font-size: 9px; }
+
+  #mobile-controls {
+    padding: 4px 12px;
+    gap: 12px;
+  }
+  .ctrl-btn { width: 36px; height: 36px; }
+  .ctrl-btn svg { width: 18px; height: 18px; }
+  .ctrl-play { width: 44px; height: 44px; }
+  .ctrl-play svg { width: 22px; height: 22px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- Hidden elements required by core JS (engine.js, i18n.js, state.js, renderer.js) -->
+<div id="compat-hidden" style="display:none">
+  <button id="btn-dpget"></button>
+  <button id="btn-dpset"></button>
+  <button id="btn-dpconnect"></button>
+  <button id="btn-plclive"></button>
+  <button id="btn-cycle"></button>
+  <button id="btn-history"></button>
+  <button id="btn-kafka"></button>
+  <button id="btn-mcp"></button>
+  <button id="btn-uns"></button>
+  <button id="btn-prev"></button>
+  <button id="btn-step"></button>
+  <button id="btn-start-scenario"></button>
+  <button id="btn-reset"></button>
+  <button id="lang-fr" class="lang-btn active"></button>
+  <button id="lang-en" class="lang-btn"></button>
+  <input type="range" id="speed" min="1" max="5" value="3" step="1">
+  <span id="speed-label"></span>
+  <div id="info-panel">
+    <div id="panel-drag-handle"><button id="panel-toggle-btn"></button></div>
+    <div id="panel-body">
+      <table id="sub-table"><thead><tr><th id="th-mgr"></th><th></th><th></th></tr></thead><tbody id="sub-body"></tbody></table>
+      <div><span id="panel-pi-title"></span><div id="pi-values"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Visible UI -->
+<div id="app">
+  <div id="step-bar">
+    <div class="idle-text" id="idle-msg"></div>
+    <span class="step-num" id="step-num" style="display:none"></span>
+    <div class="step-text" id="step-text" style="display:none"></div>
+    <div id="scenario-intro" style="display:none">
+      <div class="scenario-intro-content">
+        <span class="scenario-intro-title" id="intro-title"></span>
+        <span class="scenario-intro-desc" id="intro-desc"></span>
+      </div>
+    </div>
+  </div>
+  <div id="canvas-area">
+    <canvas id="canvas"></canvas>
+  </div>
+</div>
+
+<!-- Control bar -->
+<div id="mobile-controls">
+  <button id="ctrl-restart" class="ctrl-btn" aria-label="Restart" onclick="mobileRestart()">
+    <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor"/></svg>
+  </button>
+  <button id="ctrl-play-pause" class="ctrl-btn ctrl-play" aria-label="Play" onclick="togglePlayPause()">
+    <svg id="icon-play" viewBox="0 0 24 24" width="28" height="28"><polygon points="7,3 21,12 7,21" fill="currentColor"/></svg>
+    <svg id="icon-pause" viewBox="0 0 24 24" width="28" height="28" style="display:none"><rect x="5" y="3" width="5" height="18" rx="1" fill="currentColor"/><rect x="14" y="3" width="5" height="18" rx="1" fill="currentColor"/></svg>
+  </button>
+  <div class="ctrl-spacer"></div>
+  <button id="ctrl-overview" class="ctrl-btn" aria-label="Overview" onclick="toggleOverview()">
+    <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 3h7v2H5v5H3V3zm11 0h7v2h-5v5h-2V3zM3 14h2v5h5v2H3v-7zm13 5h-5v2h7v-7h-2v5z" fill="currentColor"/></svg>
+  </button>
+</div>
+
+<!-- Full-screen scenario menu -->
+<div id="mobile-menu" class="mobile-menu visible">
+  <div class="mobile-menu-header">
+    <img src="data:image/png;base64,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" alt="Visuel Concept" class="mobile-menu-logo" id="mobile-logo">
+    <div class="mobile-menu-title">WinCC OA Message Flow</div>
+    <div class="mobile-menu-subtitle" id="mobile-menu-subtitle">Choose a scenario</div>
+  </div>
+  <div class="mobile-menu-grid" id="mobile-menu-grid">
+    <button class="mobile-tile" onclick="mobileSelectScenario('dpGet')">
+      <span class="mobile-tile-icon">&#8681;</span>
+      <span class="mobile-tile-num">S1</span>
+      <span class="mobile-tile-label">dpGet</span>
+      <span class="mobile-tile-desc" id="tile-desc-dpGet">One-time value read from the process image (RAM).</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('dpSet')">
+      <span class="mobile-tile-icon">&#8679;</span>
+      <span class="mobile-tile-num">S2</span>
+      <span class="mobile-tile-label">dpSet</span>
+      <span class="mobile-tile-desc" id="tile-desc-dpSet">Operator setpoint write to all subscribed managers.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('dpConnect')">
+      <span class="mobile-tile-icon">&#8644;</span>
+      <span class="mobile-tile-num">S3</span>
+      <span class="mobile-tile-label">dpConnect</span>
+      <span class="mobile-tile-desc" id="tile-desc-dpConnect">Publish/subscribe subscription to a datapoint.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('plcLive')">
+      <span class="mobile-tile-icon">&#9735;</span>
+      <span class="mobile-tile-num">S4</span>
+      <span class="mobile-tile-label">PLC Live</span>
+      <span class="mobile-tile-desc" id="tile-desc-plcLive">Spontaneous PLC data, real-time push notifications.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('cycle')">
+      <span class="mobile-tile-icon">&#8635;</span>
+      <span class="mobile-tile-num">S5</span>
+      <span class="mobile-tile-label">Full cycle</span>
+      <span class="mobile-tile-desc" id="tile-desc-cycle">Full furnace regulation cycle with 2 UIs.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('history')">
+      <span class="mobile-tile-icon">&#9776;</span>
+      <span class="mobile-tile-num">S6</span>
+      <span class="mobile-tile-label">History read</span>
+      <span class="mobile-tile-desc" id="tile-desc-history">History read via NGA and PostgreSQL.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('kafka')">
+      <span class="mobile-tile-icon">&#9656;&#9656;</span>
+      <span class="mobile-tile-num">S7</span>
+      <span class="mobile-tile-label">Node.js &rarr; Kafka</span>
+      <span class="mobile-tile-desc" id="tile-desc-kafka">Kafka streaming for predictive maintenance.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('mcp')">
+      <span class="mobile-tile-icon">&#10038;</span>
+      <span class="mobile-tile-num">S8</span>
+      <span class="mobile-tile-label">Claude AI (MCP)</span>
+      <span class="mobile-tile-desc" id="tile-desc-mcp">PID optimization via Claude Desktop App and MCP.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('uns')">
+      <span class="mobile-tile-icon">&#9041;</span>
+      <span class="mobile-tile-num">S9</span>
+      <span class="mobile-tile-label">UNS (MQTT)</span>
+      <span class="mobile-tile-desc" id="tile-desc-uns">Unified Namespace (UNS) architecture via MQTT.</span>
+    </button>
+  </div>
+  <div class="mobile-menu-footer">
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="lang-fr-mobile" onclick="mobileSetLang('fr')">FR</button>
+      <button class="lang-btn" id="lang-en-mobile" onclick="mobileSetLang('en')">EN</button>
+    </div>
+    <div class="speed-control">
+      <span>Speed</span>
+      <input type="range" id="speed-mobile" min="1" max="5" value="3" step="1">
+    </div>
+  </div>
+</div>
+
+<script>
+// === core/i18n.js ===
+// ── i18n ──
+var i18n = {
+  fr: {
+    headerTitle: 'Flux de messages',
+    headerSubtitle: 'Communication inter-managers',
+    cycleBtn: 'Cycle complet',
+    historyBtn: 'Lecture historique',
+    nextBtn: 'Suivant',
+    prevBtn: 'Precedent',
+    startBtn: 'Demarrer',
+    speedLabel: 'Vitesse',
+    idleMsg: 'Choisissez un scenario pour demarrer l\'animation.',
+    subTableTitle: 'Table d\'abonnements (EV)',
+    piTitle: 'Process Image (EV — RAM)',
+    thManager: 'Manager',
+    legendRequest: 'Requete / dpSet',
+    legendNotify: 'Notification',
+    legendResponse: 'Reponse / Callback',
+    legendPersist: 'Persistance',
+    legendArchive: 'Online Change (NGA \u2192 PostgreSQL)',
+    legendOpcua: 'OPC UA (terrain)',
+    kafkaBtn: 'Node.js \u2192 Kafka',
+    mcpBtn: 'Claude AI (MCP)',
+    legendKafka: 'Kafka (streaming)',
+    legendMcp: 'MCP / Claude AI',
+    menuSubtitle: 'Choisissez un scenario',
+    tile_dpGet: 'Lecture ponctuelle d\'une valeur depuis la process image (RAM).',
+    tile_dpSet: 'Ecriture d\'une consigne operateur vers tous les managers abonnes.',
+    tile_dpConnect: 'Abonnement publish/subscribe a un datapoint.',
+    tile_plcLive: 'Donnees spontanees du PLC, notification push temps reel.',
+    tile_cycle: 'Cycle complet de regulation du four avec 2 UIs.',
+    tile_history: 'Lecture de l\'historique via NGA et PostgreSQL.',
+    tile_kafka: 'Streaming vers Kafka pour maintenance predictive.',
+    tile_mcp: 'Optimisation PID via Claude Desktop App et MCP.',
+    tile_uns: 'Architecture Unified Namespace (UNS) via MQTT.',
+    intro_dpGet: 'Lecture ponctuelle d\'une valeur. Le CTRL PID envoie une requete dpGet a l\'Event Manager, qui lit la valeur dans sa process image (RAM) et la retourne immediatement. Aucun abonnement n\'est cree.',
+    intro_dpSet: 'Ecriture d\'une consigne operateur. Le UI Panel envoie un dpSet qui traverse l\'Event Manager, la persistance (DM/SQLite), l\'archivage (NGA/PostgreSQL), notifie tous les managers abonnes (CTRL PID, Driver, autres UIs), et descend jusqu\'a l\'automate via OPC UA.',
+    intro_dpConnect: 'Abonnement publication/souscription. Le UI Panel s\'abonne a un DPE. L\'Event Manager enregistre l\'abonnement, envoie la valeur initiale, puis notifiera automatiquement le panel a chaque changement futur.',
+    intro_plcLive: 'Donnees spontanees du PLC. La temperature change dans l\'automate et remonte automatiquement via le Driver vers l\'Event Manager, qui distribue par multicast a tous les managers abonnes (CTRL PID, UIs). Aucun polling — notification push temps reel.',
+    intro_cycle: 'Cycle complet de regulation du four : le Driver lit la temperature, l\'Event Manager distribue aux managers abonnes, le CTRL PID calcule la commande, le Driver envoie vers l\'automate. Illustre le fonctionnement temps reel de WinCC OA avec 2 UI Managers (Operator + Monitoring).',
+    intro_history: 'Lecture de l\'historique via NGA. Le UI Trends demande les 2 dernieres heures de TC_101.temperature. La requete traverse l\'Event Manager vers le NGA Frontend, qui interroge PostgreSQL, puis retourne les donnees par le chemin inverse.',
+    intro_kafka: 'Streaming vers Kafka pour maintenance predictive. Le JS Manager collecte les donnees du four (temperature, vibrations) et les publie sur un topic Kafka. Un service ML detecte une anomalie de vibration et renvoie une alerte vers WinCC OA.',
+    intro_mcp: 'Optimisation PID via Claude Desktop App et MCP. L\'ingenieur maintenance demande a Claude d\'analyser les performances PID du four. Via le protocole MCP, le serveur passerelle Node.js lit les parametres PID et les tendances sur l\'Event Manager. Claude analyse les courbes et propose un reglage optimise.',
+    intro_uns: 'Architecture Unified Namespace (UNS) via MQTT. Le MQTT Publisher natif de WinCC OA publie les changements de datapoints vers un broker MQTT (Mosquitto). Le MES s\'abonne aux donnees de production (cycle, pieces), le Cloud Historian a toutes les donnees brutes. Aucune integration point-a-point.',
+  },
+  en: {
+    headerTitle: 'Message Flow',
+    headerSubtitle: 'Inter-manager communication',
+    cycleBtn: 'Full cycle',
+    historyBtn: 'History read',
+    nextBtn: 'Next',
+    prevBtn: 'Previous',
+    startBtn: 'Start',
+    speedLabel: 'Speed',
+    idleMsg: 'Choose a scenario to start the animation.',
+    subTableTitle: 'Subscription Table (EV)',
+    piTitle: 'Process Image (EV — RAM)',
+    thManager: 'Manager',
+    legendRequest: 'Request / dpSet',
+    legendNotify: 'Notification',
+    legendResponse: 'Response / Callback',
+    legendPersist: 'Persistence',
+    legendArchive: 'Online Change (NGA \u2192 PostgreSQL)',
+    legendOpcua: 'OPC UA (field)',
+    kafkaBtn: 'Node.js \u2192 Kafka',
+    mcpBtn: 'Claude AI (MCP)',
+    legendKafka: 'Kafka (streaming)',
+    legendMcp: 'MCP / Claude AI',
+    menuSubtitle: 'Choose a scenario',
+    tile_dpGet: 'One-time value read from the process image (RAM).',
+    tile_dpSet: 'Operator setpoint write to all subscribed managers.',
+    tile_dpConnect: 'Publish/subscribe subscription to a datapoint.',
+    tile_plcLive: 'Spontaneous PLC data, real-time push notifications.',
+    tile_cycle: 'Full furnace regulation cycle with 2 UIs.',
+    tile_history: 'History read via NGA and PostgreSQL.',
+    tile_kafka: 'Kafka streaming for predictive maintenance.',
+    tile_mcp: 'PID optimization via Claude Desktop App and MCP.',
+    tile_uns: 'Unified Namespace (UNS) architecture via MQTT.',
+    intro_dpGet: 'One-time value read. CTRL PID sends a dpGet request to the Event Manager, which reads the value from its process image (RAM) and returns it immediately. No subscription is created.',
+    intro_dpSet: 'Operator setpoint write. The UI Panel sends a dpSet that traverses the Event Manager, persistence (DM/SQLite), archiving (NGA/PostgreSQL), notifies all subscribed managers (CTRL PID, Driver, other UIs), and reaches the PLC via OPC UA.',
+    intro_dpConnect: 'Publish/subscribe subscription. The UI Panel subscribes to a DPE. The Event Manager registers the subscription, sends the initial value, then will automatically notify the panel on every future change.',
+    intro_plcLive: 'Spontaneous PLC data. Temperature changes in the PLC and flows automatically via the Driver to the Event Manager, which multicasts to all subscribed managers (CTRL PID, UIs). No polling — real-time push notifications.',
+    intro_cycle: 'Full furnace regulation cycle: Driver reads temperature, Event Manager distributes to subscribed managers, CTRL PID computes the command, Driver sends to PLC. Demonstrates WinCC OA real-time operation with 2 UI Managers (Operator + Monitoring).',
+    intro_history: 'History read via NGA. The UI Trends panel requests the last 2 hours of TC_101.temperature. The request flows through Event Manager to NGA Frontend, which queries PostgreSQL, then returns data via the reverse path.',
+    intro_kafka: 'Kafka streaming for predictive maintenance. JS Manager collects furnace data (temperature, vibrations) and publishes to a Kafka topic. An ML service detects a vibration anomaly and sends an alert back to WinCC OA.',
+    intro_mcp: 'PID optimization via Claude Desktop App and MCP. The maintenance engineer asks Claude to analyze furnace PID performance. Via the MCP protocol, the Node.js gateway reads PID parameters and trends from the Event Manager. Claude analyzes the curves and suggests optimized tuning.',
+    intro_uns: 'Unified Namespace (UNS) architecture via MQTT. The WinCC OA native MQTT Publisher publishes datapoint changes to an MQTT broker (Mosquitto). MES subscribes to production data (cycle, parts), Cloud Historian to all raw data. No point-to-point integration needed.',
+  }
+};
+
+// Detect browser locale: use 'fr' if navigator language starts with 'fr', otherwise default to 'en'
+var detectedLang = (navigator.language || navigator.userLanguage || 'en').toLowerCase().startsWith('fr') ? 'fr' : 'en';
+var currentLang = detectedLang;
+
+function t(key) {
+  return i18n[currentLang][key] || i18n['en'][key] || key;
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  document.getElementById('lang-fr').className = 'lang-btn' + (lang === 'fr' ? ' active' : '');
+  document.getElementById('lang-en').className = 'lang-btn' + (lang === 'en' ? ' active' : '');
+  document.documentElement.lang = lang;
+  updateStaticUI();
+}
+
+// Apply detected language on load
+document.addEventListener('DOMContentLoaded', function() { setLang(detectedLang); });
+
+function updateStaticUI() {
+  // Only the step descriptions and scenario intros change with language
+  // UI labels (buttons, legend, panel titles) are fixed in English
+  // If a scenario intro is visible, refresh it
+  if (pendingScenario) {
+    var introDesc = document.getElementById('intro-desc');
+    if (introDesc) introDesc.innerHTML = t('intro_' + pendingScenario);
+  }
+}
+
+// === core/managers.js ===
+// ── MANAGERS ──
+var managers = {
+  plc:      { label: 'PLC\n(S7 / Simatic)',               color: '#94a3b8', icon: '', style: 'dashed' },
+  driver:   { label: 'Driver\nOPC UA',                     color: '#f97316', icon: '' },
+  ev:       { label: 'Event Manager\n(EV)',                color: '#3b82f6', icon: '' },
+  dm:       { label: 'Data Manager\n(DM \u2014 SQLite)',   color: '#8b5cf6', icon: '' },
+  ctrl_pid: { label: 'CTRL Manager\n(PID)',                color: '#10b981', icon: '' },
+  ui1:      { label: 'UI Manager\n(Operator)',             color: '#f59e0b', icon: '' },
+  ui2:      { label: 'UI Manager\n(Monitoring)',           color: '#eab308', icon: '' },
+  nga:      { label: 'NGA Frontend\n(Backend In-Proc)',      color: '#ec4899', icon: '' },
+  pgsql:    { label: 'PostgreSQL\n(database)',               color: '#336791', icon: '', style: 'dashed' },
+  js_mgr:    { label: 'JS Manager\n(Node.js)',                  color: '#06b6d4', icon: '' },
+  kafka:     { label: 'Broker\nKafka',                          color: '#06b6d4', icon: '', style: 'dashed' },
+  pred_maint:{ label: 'Predictive\nMaintenance (ML)',            color: '#14b8a6', icon: '', style: 'dashed' },
+  mcp_server:{ label: 'MCP Server\n(Node.js gateway)',           color: '#a855f7', icon: '' },
+  claude_app:{ label: 'Claude\nDesktop App',                     color: '#d946ef', icon: '' },
+  anthropic: { label: 'Anthropic\nAPI',                          color: '#d946ef', icon: '', style: 'dashed' },
+  mqtt_pub:  { label: 'MQTT Publisher\n(WinCC OA)',              color: '#22d3ee', icon: '' },
+  mqtt_broker:{ label: 'MQTT Broker\n(Mosquitto)',                color: '#22d3ee', icon: '', style: 'dashed' },
+  uns_mes:   { label: 'MES\n(Manufacturing)',                    color: '#84cc16', icon: '', style: 'dashed' },
+  uns_hist:  { label: 'Cloud Historian\n(Data Lake)',            color: '#84cc16', icon: '', style: 'dashed' },
+};
+
+// positions computed on resize
+var mgrPos = {};
+var mgrW = 120, mgrH = 64;
+var baseMgrW = 120, baseMgrH = 64;
+var currentScale = 1;
+
+// Manager visibility per scenario
+var BASE_MANAGERS = ['plc', 'driver', 'ev', 'dm', 'ctrl_pid', 'ui1', 'ui2', 'nga', 'pgsql'];
+var KAFKA_MANAGERS = ['js_mgr', 'kafka', 'pred_maint'];
+var MCP_MANAGERS = ['mcp_server', 'claude_app', 'anthropic'];
+var MQTT_MANAGERS = ['mqtt_pub', 'mqtt_broker', 'uns_mes', 'uns_hist'];
+
+var scenarioVisibility = {
+  dpGet:      BASE_MANAGERS,
+  dpSet:      BASE_MANAGERS,
+  dpConnect:  BASE_MANAGERS,
+  plcLive:    BASE_MANAGERS,
+  cycle:      BASE_MANAGERS,
+  history:    BASE_MANAGERS,
+  kafka:      BASE_MANAGERS.concat(KAFKA_MANAGERS),
+  mcp:        BASE_MANAGERS.concat(MCP_MANAGERS),
+  uns:        BASE_MANAGERS.concat(MQTT_MANAGERS),
+};
+var visibleManagers = new Set(BASE_MANAGERS);
+
+function isManagerVisible(id) {
+  return visibleManagers.has(id);
+}
+
+function layoutManagers(w, h) {
+  var isMobile = w < 768 || (w < 1024 && h < 500);
+  var isPortrait = isMobile && h > w * 1.1;
+  var scale;
+
+  if (isPortrait) {
+    scale = Math.max(Math.min(w / 480, h / 850), 0.45);
+  } else {
+    scale = isMobile ? Math.max(Math.min(w / 900, h / 450), 0.38) : 1;
+  }
+
+  currentScale = scale;
+  mgrW = Math.round(baseMgrW * scale);
+  mgrH = Math.round(baseMgrH * scale);
+
+  if (isPortrait) {
+    layoutPortrait(w, h, scale);
+  } else {
+    layoutLandscape(w, h, scale, isMobile);
+  }
+}
+
+// Portrait: vertical spine PLC->Driver->EV->DM->NGA->PGSQL
+// CTRL branches left, UIs branch right
+function layoutPortrait(w, h, scale) {
+  var cx = w / 2;
+  var colW = Math.min((w - mgrW - 16) / 2, mgrW * 1.3);
+  var leftCol = cx - colW;
+  var rightCol = cx + colW;
+
+  var pad = 8;
+  var rowH = (h - pad * 2) / 6;
+
+  // Vertical spine (center column)
+  mgrPos.plc =    { x: cx, y: pad + rowH * 0.5 };
+  mgrPos.driver = { x: cx, y: pad + rowH * 1.5 };
+  mgrPos.ev =     { x: cx, y: pad + rowH * 2.5 };
+  mgrPos.dm =     { x: cx, y: pad + rowH * 3.5 };
+  mgrPos.nga =    { x: cx, y: pad + rowH * 4.3 };
+  mgrPos.pgsql =  { x: cx, y: pad + rowH * 5.2 };
+
+  // Left branch: CTRL at same row as EV
+  mgrPos.ctrl_pid = { x: leftCol, y: pad + rowH * 2.5 };
+
+  // Right branch: UIs stacked around EV row
+  var uiGap = mgrH * 0.55;
+  mgrPos.ui1 = { x: rightCol, y: pad + rowH * 2.5 - uiGap };
+  mgrPos.ui2 = { x: rightCol, y: pad + rowH * 2.5 + uiGap };
+
+  // Inside extension managers (right column, below UIs)
+  var insideExtY = pad + rowH * 3.5;
+  mgrPos.js_mgr =     { x: rightCol, y: insideExtY };
+  mgrPos.mcp_server = { x: rightCol, y: insideExtY };
+  mgrPos.mqtt_pub =   { x: rightCol, y: insideExtY };
+
+  // Outside extension managers (right column, further down)
+  var extSpacing = mgrH + 8 * scale;
+  var extY = pad + rowH * 4.5;
+
+  mgrPos.kafka =       { x: rightCol, y: extY };
+  mgrPos.pred_maint =  { x: rightCol, y: extY + extSpacing };
+
+  mgrPos.claude_app =  { x: rightCol, y: extY };
+  mgrPos.anthropic =   { x: rightCol, y: extY + extSpacing };
+
+  mgrPos.mqtt_broker = { x: rightCol, y: extY };
+  var unsSubY = extY + extSpacing;
+  mgrPos.uns_mes =  { x: leftCol, y: unsSubY };
+  mgrPos.uns_hist = { x: rightCol, y: unsSubY };
+}
+
+// Landscape: horizontal layout (existing design, improved space usage)
+function layoutLandscape(w, h, scale, isMobile) {
+  var panelOffset = isMobile ? 0 : 280;
+  var cx = (w - panelOffset) / 2;
+  var cy = h / 2;
+
+  // Use more space on mobile
+  var rx, ry;
+  if (isMobile) {
+    rx = Math.min(cx * 0.58, 280 * scale);
+    ry = Math.min(cy * 0.58, 180 * scale);
+  } else {
+    rx = Math.min(cx * 0.50, 240 * scale);
+    ry = Math.min(cy * 0.48, 150 * scale);
+  }
+
+  // EV center
+  mgrPos.ev = { x: cx, y: cy - 16 * scale };
+  // DM below EV
+  mgrPos.dm = { x: cx - rx * 0.45, y: cy + ry * 0.85 };
+  // NGA below EV, right side
+  mgrPos.nga = { x: cx + rx * 0.45, y: cy + ry * 0.85 };
+  // PostgreSQL database — external, below NGA
+  mgrPos.pgsql = { x: cx + rx * 0.45, y: cy + ry * 1.55 };
+  // Driver left of EV
+  mgrPos.driver = { x: cx - rx, y: cy - 16 * scale };
+  // PLC far left (outside WinCC OA boundary)
+  mgrPos.plc = { x: cx - rx * 1.7, y: cy - 16 * scale };
+  // CTRL top right
+  mgrPos.ctrl_pid = { x: cx + rx * 0.6, y: cy - ry * 0.9 };
+  // 2 UI Managers stacked vertically on the right
+  var uiX = cx + rx * 1.05;
+  var uiSpacing = mgrH + 10 * scale;
+  mgrPos.ui1 = { x: uiX, y: cy - uiSpacing / 2 - 4 * scale };
+  mgrPos.ui2 = { x: uiX, y: cy + uiSpacing / 2 + 4 * scale };
+  // Inside-WinCC-OA extension managers (one per scenario, shared position)
+  var insideExtX = uiX + mgrW + 40 * scale;
+  var extSpacing = mgrH + 10 * scale;
+  var extTopY = cy - extSpacing - 8 * scale;
+
+  // JS Manager, MCP Server, MQTT Publisher share the same inside position
+  mgrPos.js_mgr = { x: insideExtX, y: cy };
+  mgrPos.mcp_server = { x: insideExtX, y: cy };
+  mgrPos.mqtt_pub = { x: insideExtX, y: cy };
+
+  // Outside-WinCC-OA managers (further right, stacked vertically)
+  var outsideExtX = insideExtX + mgrW + (isMobile ? 40 : 100);
+
+  // Kafka scenario: Broker Kafka, Predictive Maintenance
+  mgrPos.kafka = { x: outsideExtX, y: extTopY };
+  mgrPos.pred_maint = { x: outsideExtX, y: extTopY + extSpacing };
+
+  // MCP scenario: Claude Desktop App, Anthropic API
+  mgrPos.claude_app = { x: outsideExtX, y: extTopY };
+  mgrPos.anthropic = { x: outsideExtX, y: extTopY + extSpacing };
+
+  // UNS scenario: MQTT Broker on top, MES and Cloud Historian side by side below
+  mgrPos.mqtt_broker = { x: outsideExtX, y: extTopY };
+  var unsSubY = extTopY + extSpacing + 16 * scale;
+  mgrPos.uns_mes = { x: outsideExtX - mgrW/2 - 16 * scale, y: unsSubY };
+  mgrPos.uns_hist = { x: outsideExtX + mgrW/2 + 16 * scale, y: unsSubY };
+}
+
+// === core/state.js ===
+// ── PROCESS IMAGE STATE ──
+var processImage = {
+  'TC_101.temperature': 820.0,
+  'PID_TOP.setpoint': 900.0,
+  'PID_TOP.output': 65.0,
+  'HR_TOP.power': 65.0,
+  'TC_102.temperature': 815.0,
+  'CYCLE_001.phase': 'rampe',
+};
+var piFlash = {};
+
+// ── SUBSCRIPTIONS ──
+var subscriptions = [];
+var highlightSubs = [];
+
+function renderSubTable() {
+  var tbody = document.getElementById('sub-body');
+  tbody.innerHTML = '';
+  subscriptions.forEach(function(s, i) {
+    var tr = document.createElement('tr');
+    if (highlightSubs.includes(i)) tr.className = 'highlight';
+    tr.innerHTML = '<td style="color:' + (managers[s.mgr]?.color || '#fff') + '">' + s.mgrLabel + '</td><td>' + s.dpe + '</td><td>' + s.cb + '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function renderProcessImage() {
+  var div = document.getElementById('pi-values');
+  div.innerHTML = '';
+  for (var k in processImage) {
+    if (!processImage.hasOwnProperty(k)) continue;
+    var v = processImage[k];
+    var row = document.createElement('div');
+    row.className = 'pi-row' + (piFlash[k] ? ' flash' : '');
+    var val = typeof v === 'number' ? v.toFixed(1) : v;
+    row.innerHTML = '<span class="dpe">' + k + '</span><span class="val">' + val + '</span>';
+    div.appendChild(row);
+  }
+}
+
+// === core/renderer.js ===
+// ── CONFIG ──
+var canvas = document.getElementById('canvas');
+var ctx = canvas.getContext('2d');
+var speedSlider = document.getElementById('speed');
+var speedLabel = document.getElementById('speed-label');
+var canvasW = 0, canvasH = 0; // CSS dimensions (not pixel)
+
+speedSlider.addEventListener('input', function() {
+  var v = [0.25, 0.5, 1, 2, 3][speedSlider.value - 1];
+  speedLabel.textContent = '\u00d7' + v;
+});
+function getSpeed() {
+  return [0.25, 0.5, 1, 2, 3][speedSlider.value - 1];
+}
+
+// ── MESSAGES (animated arrows) ──
+var messages = []; // { from, to, label, color, progress, speed, onDone }
+
+function addMessage(fromId, toId, label, color, duration) {
+  if (replayMode) return Promise.resolve();
+  checkCancelled();
+  return new Promise(function(resolve) {
+    messages.push({
+      from: fromId, to: toId, label: label, color: color,
+      progress: 0,
+      speed: 1 / (duration / (1000 / 60)),
+      onDone: resolve,
+    });
+    // 3D camera fly-to target
+    if (typeof flyTo3D === 'function') flyTo3D(toId);
+  });
+}
+
+// Send messages in parallel (returns when all are done)
+function addMessagesParallel(arr) {
+  if (replayMode) return Promise.resolve();
+  checkCancelled();
+  return Promise.all(arr.map(function(a) { return addMessage(a.from, a.to, a.label, a.color, a.duration); }));
+}
+
+// ── GLOW EFFECT ──
+var glowManagers = {}; // id -> { color, t }
+
+function glowManager(id, color, duration) {
+  if (replayMode) return;
+  glowManagers[id] = { color: color, t: 0, duration: duration };
+}
+
+// ── ANIMATION LOOP ──
+var animating = true;
+
+function resize() {
+  var area = document.getElementById('canvas-area');
+  var dpr = window.devicePixelRatio || 1;
+  canvasW = area.clientWidth;
+  canvasH = area.clientHeight;
+  canvas.width = canvasW * dpr;
+  canvas.height = canvasH * dpr;
+  canvas.style.width = canvasW + 'px';
+  canvas.style.height = canvasH + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  layoutManagers(canvasW, canvasH);
+}
+window.addEventListener('resize', resize);
+resize();
+
+function drawRoundedRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function getCanvasScale() {
+  return currentScale;
+}
+
+function drawManager(id) {
+  var m = managers[id];
+  var p = mgrPos[id];
+  if (!p) return;
+  var x = p.x - mgrW/2, y = p.y - mgrH/2;
+  var s = getCanvasScale();
+
+  // Glow
+  if (glowManagers[id]) {
+    var g = glowManagers[id];
+    var alpha = Math.sin(g.t / g.duration * Math.PI) * 0.5;
+    ctx.save();
+    ctx.shadowColor = g.color;
+    ctx.shadowBlur = 25 * s;
+    drawRoundedRect(x - 3 * s, y - 3 * s, mgrW + 6 * s, mgrH + 6 * s, 10 * s);
+    ctx.fillStyle = g.color.replace(')', ',' + alpha + ')').replace('rgb', 'rgba');
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Box
+  drawRoundedRect(x, y, mgrW, mgrH, 8 * s);
+  ctx.fillStyle = m.style === 'dashed' ? '#141c2b' : '#1e293b';
+  ctx.fill();
+  ctx.strokeStyle = m.color;
+  ctx.lineWidth = 2 * s;
+  if (m.style === 'dashed') ctx.setLineDash([6 * s, 4 * s]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Label
+  var lines = m.label.split('\n');
+  var fontSize1 = Math.round(12 * s);
+  var fontSize2 = Math.round(11 * s);
+  ctx.fillStyle = '#e2e8f0';
+  ctx.font = '600 ' + fontSize1 + 'px "Segoe UI", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  var lineH = Math.round(15 * s);
+  var startY = p.y - ((lines.length - 1) * lineH) / 2;
+  lines.forEach(function(line, i) {
+    ctx.fillStyle = i === 0 ? '#fff' : m.color;
+    ctx.font = i === 0 ? '600 ' + fontSize1 + 'px "Segoe UI", system-ui, sans-serif' : fontSize2 + 'px "Segoe UI", system-ui, sans-serif';
+    ctx.fillText(line, p.x, startY + i * lineH);
+  });
+}
+
+function drawArrow(x1, y1, x2, y2, color, progress, label) {
+  var s = getCanvasScale();
+  // Clamp endpoints to manager box edges
+  var dx = x2 - x1, dy = y2 - y1;
+  var dist = Math.sqrt(dx*dx + dy*dy);
+  if (dist < 1) return;
+  var nx = dx/dist, ny = dy/dist;
+
+  // offset start/end from box edges (scaled)
+  var startDist = mgrW * 0.35;
+  var endDist = mgrW * 0.35;
+  var sx = x1 + nx * startDist, sy = y1 + ny * startDist;
+  var ex = x2 - nx * endDist, ey = y2 - ny * endDist;
+
+  var segDx = ex - sx, segDy = ey - sy;
+  var segDist = Math.sqrt(segDx*segDx + segDy*segDy);
+
+  // Trail
+  ctx.beginPath();
+  ctx.moveTo(sx, sy);
+  var px = sx + segDx * progress, py = sy + segDy * progress;
+  ctx.lineTo(px, py);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(2, 3 * s);
+  ctx.globalAlpha = 0.8;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // Arrowhead
+  if (progress > 0.05) {
+    var aLen = Math.max(6, 10 * s);
+    var angle = Math.atan2(segDy, segDx);
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.lineTo(px - aLen * Math.cos(angle - 0.4), py - aLen * Math.sin(angle - 0.4));
+    ctx.lineTo(px - aLen * Math.cos(angle + 0.4), py - aLen * Math.sin(angle + 0.4));
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  // Dot at head
+  ctx.beginPath();
+  ctx.arc(px, py, Math.max(3, 5 * s), 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(px, py, Math.max(5, 8 * s), 0, Math.PI * 2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5 * s;
+  ctx.globalAlpha = 0.4;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // Label
+  if (label) {
+    var fontSize = Math.max(8, Math.round(11 * s));
+    var lx = sx + segDx * Math.min(progress, 0.55);
+    var ly = sy + segDy * Math.min(progress, 0.55) - 14 * s;
+    ctx.font = '600 ' + fontSize + 'px "Consolas", "Fira Code", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    // background
+    var tw = ctx.measureText(label).width + 10 * s;
+    drawRoundedRect(lx - tw/2, ly - 14 * s, tw, 17 * s, 4 * s);
+    ctx.fillStyle = 'rgba(17,24,39,0.9)';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.fillText(label, lx, ly);
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvasW, canvasH);
+
+  // Grid dots
+  ctx.fillStyle = 'rgba(255,255,255,0.03)';
+  for (var x = 0; x < canvasW; x += 30) {
+    for (var y = 0; y < canvasH; y += 30) {
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+
+  // WinCC OA boundary box
+  if (mgrPos.plc && mgrPos.driver) {
+    var boundLeft = mgrPos.driver.x - mgrW/2 - 20;
+    var boundTop = Math.min(
+      mgrPos.ctrl_pid ? mgrPos.ctrl_pid.y - mgrH/2 - 30 : mgrPos.ev.y - mgrH/2 - 30,
+      mgrPos.ui1 ? mgrPos.ui1.y - mgrH/2 - 30 : 9999
+    );
+    // Include inside-ext managers (js_mgr, mcp_server, mqtt_pub) only when visible
+    var insideExtRight = Math.max(
+      (isManagerVisible('js_mgr') && mgrPos.js_mgr) ? mgrPos.js_mgr.x + mgrW/2 + 20 : 0,
+      (isManagerVisible('mcp_server') && mgrPos.mcp_server) ? mgrPos.mcp_server.x + mgrW/2 + 20 : 0,
+      (isManagerVisible('mqtt_pub') && mgrPos.mqtt_pub) ? mgrPos.mqtt_pub.x + mgrW/2 + 20 : 0
+    );
+    var boundRight = Math.max(
+      mgrPos.ui1 ? mgrPos.ui1.x + mgrW/2 + 20 : 0,
+      mgrPos.ui2 ? mgrPos.ui2.x + mgrW/2 + 20 : 0,
+      mgrPos.nga ? mgrPos.nga.x + mgrW/2 + 20 : 0,
+      insideExtRight
+    );
+    var boundBottom = Math.max(
+      mgrPos.dm ? mgrPos.dm.y + mgrH/2 + 30 : 0,
+      mgrPos.nga ? mgrPos.nga.y + mgrH/2 + 30 : 0,
+      mgrPos.ui2 ? mgrPos.ui2.y + mgrH/2 + 30 : 0
+    );
+    ctx.save();
+    ctx.setLineDash([10, 6]);
+    ctx.strokeStyle = 'rgba(96,165,250,0.15)';
+    ctx.lineWidth = 1.5;
+    drawRoundedRect(boundLeft, boundTop, boundRight - boundLeft, boundBottom - boundTop, 16);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Label
+    ctx.font = '600 11px "Segoe UI", system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(96,165,250,0.3)';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('WinCC OA', boundLeft + 12, boundTop + 6);
+    ctx.restore();
+  }
+
+  // Connection lines (faint) — from EV to other WinCC OA managers
+  ctx.strokeStyle = 'rgba(96,165,250,0.18)';
+  ctx.lineWidth = 1.5;
+  var evP = mgrPos.ev;
+  for (var id in managers) {
+    if (!managers.hasOwnProperty(id)) continue;
+    if (!isManagerVisible(id)) continue;
+    if (id === 'ev' || id === 'plc' || id === 'pgsql' || id === 'kafka' || id === 'pred_maint' || id === 'claude_app' || id === 'anthropic' || id === 'mqtt_broker' || id === 'uns_mes' || id === 'uns_hist') continue;
+    var p = mgrPos[id];
+    if (!p) continue;
+    ctx.beginPath();
+    ctx.moveTo(evP.x, evP.y);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+  // Driver <-> PLC line (OPC UA)
+  if (mgrPos.driver && mgrPos.plc) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148,163,184,0.35)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(mgrPos.driver.x, mgrPos.driver.y);
+    ctx.lineTo(mgrPos.plc.x, mgrPos.plc.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // "OPC UA" label on the link
+    var midX = (mgrPos.driver.x + mgrPos.plc.x) / 2;
+    var midY = (mgrPos.driver.y + mgrPos.plc.y) / 2 - 12;
+    ctx.font = '600 9px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(148,163,184,0.55)';
+    ctx.fillText('OPC UA', midX, midY);
+    ctx.restore();
+  }
+
+  // NGA <-> PostgreSQL line (external database)
+  if (mgrPos.nga && mgrPos.pgsql) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(51,103,145,0.4)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(mgrPos.nga.x, mgrPos.nga.y);
+    ctx.lineTo(mgrPos.pgsql.x, mgrPos.pgsql.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    var midX = (mgrPos.nga.x + mgrPos.pgsql.x) / 2;
+    var midY = (mgrPos.nga.y + mgrPos.pgsql.y) / 2 - 12;
+    ctx.font = '600 9px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(51,103,145,0.6)';
+    ctx.fillText('SQL', midX + 14, midY);
+    ctx.restore();
+  }
+  // NGA <-> DM link (history read return path)
+  if (mgrPos.nga && mgrPos.dm) {
+    ctx.strokeStyle = 'rgba(139,92,246,0.2)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(mgrPos.nga.x, mgrPos.nga.y);
+    ctx.lineTo(mgrPos.dm.x, mgrPos.dm.y);
+    ctx.stroke();
+  }
+  // JS Manager <-> Kafka line
+  if (isManagerVisible('kafka') && mgrPos.js_mgr && mgrPos.kafka) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(6,182,212,0.35)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(mgrPos.js_mgr.x, mgrPos.js_mgr.y);
+    ctx.lineTo(mgrPos.kafka.x, mgrPos.kafka.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    var midX = (mgrPos.js_mgr.x + mgrPos.kafka.x) / 2;
+    var midY = (mgrPos.js_mgr.y + mgrPos.kafka.y) / 2 - 12;
+    ctx.font = '600 9px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(6,182,212,0.6)';
+    ctx.fillText('Kafka', midX, midY);
+    ctx.restore();
+  }
+  // Kafka <-> Predictive Maintenance line
+  if (isManagerVisible('pred_maint') && mgrPos.kafka && mgrPos.pred_maint) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(20,184,166,0.35)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(mgrPos.kafka.x, mgrPos.kafka.y);
+    ctx.lineTo(mgrPos.pred_maint.x, mgrPos.pred_maint.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+  // MCP Server <-> Claude Desktop App line
+  if (isManagerVisible('mcp_server') && mgrPos.mcp_server && mgrPos.claude_app) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(217,70,239,0.35)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(mgrPos.mcp_server.x, mgrPos.mcp_server.y);
+    ctx.lineTo(mgrPos.claude_app.x, mgrPos.claude_app.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    var midX = (mgrPos.mcp_server.x + mgrPos.claude_app.x) / 2;
+    var midY = (mgrPos.mcp_server.y + mgrPos.claude_app.y) / 2 - 12;
+    ctx.font = '600 9px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(217,70,239,0.6)';
+    ctx.fillText('MCP', midX, midY);
+    ctx.restore();
+  }
+  // Claude Desktop App <-> Anthropic API line
+  if (isManagerVisible('anthropic') && mgrPos.claude_app && mgrPos.anthropic) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(217,70,239,0.35)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(mgrPos.claude_app.x, mgrPos.claude_app.y);
+    ctx.lineTo(mgrPos.anthropic.x, mgrPos.anthropic.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    var midX = (mgrPos.claude_app.x + mgrPos.anthropic.x) / 2;
+    var midY = (mgrPos.claude_app.y + mgrPos.anthropic.y) / 2 - 12;
+    ctx.font = '600 9px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(217,70,239,0.6)';
+    ctx.fillText('API', midX, midY);
+    ctx.restore();
+  }
+  // EV <-> MCP Server line (direct connection)
+  if (isManagerVisible('mcp_server') && mgrPos.ev && mgrPos.mcp_server) {
+    ctx.strokeStyle = 'rgba(168,85,247,0.2)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(mgrPos.ev.x, mgrPos.ev.y);
+    ctx.lineTo(mgrPos.mcp_server.x, mgrPos.mcp_server.y);
+    ctx.stroke();
+  }
+  // MQTT Publisher <-> Mosquitto Broker line
+  if (isManagerVisible('mqtt_pub') && mgrPos.mqtt_pub && mgrPos.mqtt_broker) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(34,211,238,0.35)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(mgrPos.mqtt_pub.x, mgrPos.mqtt_pub.y);
+    ctx.lineTo(mgrPos.mqtt_broker.x, mgrPos.mqtt_broker.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    var midX = (mgrPos.mqtt_pub.x + mgrPos.mqtt_broker.x) / 2;
+    var midY = (mgrPos.mqtt_pub.y + mgrPos.mqtt_broker.y) / 2 - 12;
+    ctx.font = '600 9px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(34,211,238,0.6)';
+    ctx.fillText('MQTT', midX, midY);
+    ctx.restore();
+  }
+  // Mosquitto <-> MES line
+  if (isManagerVisible('uns_mes') && mgrPos.mqtt_broker && mgrPos.uns_mes) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(132,204,22,0.35)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(mgrPos.mqtt_broker.x, mgrPos.mqtt_broker.y);
+    ctx.lineTo(mgrPos.uns_mes.x, mgrPos.uns_mes.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+  // Mosquitto <-> Cloud Historian line
+  if (isManagerVisible('uns_hist') && mgrPos.mqtt_broker && mgrPos.uns_hist) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(132,204,22,0.35)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(mgrPos.mqtt_broker.x, mgrPos.mqtt_broker.y);
+    ctx.lineTo(mgrPos.uns_hist.x, mgrPos.uns_hist.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+  // EV <-> MQTT Publisher line
+  if (isManagerVisible('mqtt_pub') && mgrPos.ev && mgrPos.mqtt_pub) {
+    ctx.strokeStyle = 'rgba(34,211,238,0.2)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(mgrPos.ev.x, mgrPos.ev.y);
+    ctx.lineTo(mgrPos.mqtt_pub.x, mgrPos.mqtt_pub.y);
+    ctx.stroke();
+  }
+
+  // Managers (only visible ones)
+  for (var id in managers) {
+    if (!managers.hasOwnProperty(id)) continue;
+    if (isManagerVisible(id)) drawManager(id);
+  }
+
+  // Animated messages
+  var speed = getSpeed();
+  for (var i = messages.length - 1; i >= 0; i--) {
+    var msg = messages[i];
+    var from = mgrPos[msg.from];
+    var to = mgrPos[msg.to];
+    if (!from || !to) { messages.splice(i, 1); continue; }
+
+    // Hold time: keep arrow visible after arrival (in ms, adjusted by speed)
+    var holdFrames = Math.round(400 / (16 * speed)); // ~400ms hold
+
+    // self-arrow (internal)
+    if (msg.from === msg.to) {
+      if (msg.progress < 1) {
+        msg.progress += msg.speed * speed;
+        if (msg.progress >= 1) { msg.progress = 1; msg.holdCount = 0; }
+      } else {
+        msg.holdCount = (msg.holdCount || 0) + 1;
+        if (msg.holdCount >= holdFrames) {
+          messages.splice(i, 1);
+          msg.onDone();
+          continue;
+        }
+      }
+      // Draw a small loop
+      var lcx = from.x, lcy = from.y - mgrH/2 - 20;
+      var r = 18;
+      var angle = Math.min(msg.progress, 1) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(lcx, lcy, r, 0, angle);
+      ctx.strokeStyle = msg.color;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      // Label
+      if (msg.label) {
+        ctx.font = '600 10px "Consolas", "Fira Code", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = msg.color;
+        ctx.fillText(msg.label, lcx, lcy - r - 6);
+      }
+      continue;
+    }
+
+    drawArrow(from.x, from.y, to.x, to.y, msg.color, Math.min(msg.progress, 1), msg.label);
+    if (msg.progress < 1) {
+      msg.progress += msg.speed * speed;
+      if (msg.progress >= 1) { msg.progress = 1; msg.holdCount = 0; }
+    } else {
+      msg.holdCount = (msg.holdCount || 0) + 1;
+      if (msg.holdCount >= holdFrames) {
+        messages.splice(i, 1);
+        msg.onDone();
+      }
+    }
+  }
+
+  // Update glows
+  for (var gid in glowManagers) {
+    if (!glowManagers.hasOwnProperty(gid)) continue;
+    var g = glowManagers[gid];
+    g.t += 16 * getSpeed();
+    if (g.t >= g.duration) delete glowManagers[gid];
+  }
+
+  requestAnimationFrame(draw);
+}
+draw();
+renderSubTable();
+renderProcessImage();
+
+// === core/engine.js ===
+// ── SCENARIO ENGINE ──
+var scenarioRunning = false;
+var stepMode = false;
+var stepResolve = null;
+var currentSteps = [];
+var currentStepIdx = 0;
+var currentScenarioName = '';
+var replayTarget = -1;
+var replayMode = false;
+var globalStepIdx = 0;
+var pendingScenario = null;
+var scenarioGen = 0;
+var currentGen = 0;
+var autoAdvanceFirst = false;
+
+function checkCancelled() {
+  if (currentGen !== scenarioGen) throw 'scenario_cancelled';
+}
+
+var scenarioTitles = {
+  dpGet: 'S1 \u2014 dpGet',
+  dpSet: 'S2 \u2014 dpSet',
+  dpConnect: 'S3 \u2014 dpConnect',
+  plcLive: 'S4 \u2014 PLC Live',
+  cycle: 'S5 \u2014 Cycle complet',
+  history: 'S6 \u2014 Lecture historique',
+  kafka: 'S7 \u2014 Node.js \u2192 Kafka',
+  mcp: 'S8 \u2014 Claude AI (MCP)',
+  uns: 'S9 \u2014 UNS (MQTT)',
+};
+
+function setButtons(disabled) {
+  document.getElementById('btn-dpget').disabled = disabled;
+  document.getElementById('btn-dpset').disabled = disabled;
+  document.getElementById('btn-dpconnect').disabled = disabled;
+  document.getElementById('btn-plclive').disabled = disabled;
+  document.getElementById('btn-cycle').disabled = disabled;
+  document.getElementById('btn-history').disabled = disabled;
+  document.getElementById('btn-kafka').disabled = disabled;
+  document.getElementById('btn-mcp').disabled = disabled;
+  document.getElementById('btn-uns').disabled = disabled;
+}
+
+function showStep(num, total, html) {
+  document.getElementById('idle-msg').style.display = 'none';
+  document.getElementById('scenario-intro').style.display = 'none';
+  var sn = document.getElementById('step-num');
+  var st = document.getElementById('step-text');
+  sn.style.display = '';
+  st.style.display = '';
+  sn.textContent = num + ' / ' + total;
+  st.innerHTML = html;
+  // Update navigation buttons
+  document.getElementById('btn-prev').disabled = (num <= 1);
+  if (num >= total) {
+    document.getElementById('btn-step').textContent = '\u2713';
+  } else {
+    document.getElementById('btn-step').innerHTML = t('nextBtn') + ' &#9656;';
+  }
+}
+
+function hideStep() {
+  var idleEl = document.getElementById('idle-msg');
+  idleEl.style.display = '';
+  idleEl.textContent = 'Choose a scenario to start the animation.';
+  document.getElementById('step-num').style.display = 'none';
+  document.getElementById('step-text').style.display = 'none';
+  document.getElementById('scenario-intro').style.display = 'none';
+  document.getElementById('btn-start-scenario').style.display = 'none';
+}
+
+function wait(ms) {
+  checkCancelled();
+  if (replayMode) return new Promise(function(r) { setTimeout(r, 5); });
+  return new Promise(function(r) { setTimeout(r, ms / getSpeed()); });
+}
+
+async function waitForStep() {
+  checkCancelled();
+  // In replay mode, auto-advance until reaching target
+  if (replayMode && globalStepIdx < replayTarget) {
+    globalStepIdx++;
+    document.getElementById('btn-prev').disabled = (globalStepIdx <= 0);
+    await wait(50);
+    return;
+  }
+  if (replayMode && globalStepIdx >= replayTarget) {
+    replayMode = false;
+    // Fall through to normal step wait
+  }
+
+  globalStepIdx++;
+  document.getElementById('btn-prev').disabled = (globalStepIdx <= 1);
+
+  // Auto-advance on first step after Start is clicked
+  if (autoAdvanceFirst) {
+    autoAdvanceFirst = false;
+    document.getElementById('btn-step').disabled = false;
+    return;
+  }
+
+  document.getElementById('btn-step').disabled = false;
+  return new Promise(function(r) { stepResolve = r; });
+}
+
+function nextStep() {
+  if (stepResolve) {
+    document.getElementById('btn-step').disabled = true;
+    stepResolve();
+    stepResolve = null;
+  }
+}
+
+function showScenarioIntro(name) {
+  if (scenarioRunning) return;
+  pendingScenario = name;
+
+  // Show relevant managers for this scenario
+  visibleManagers = new Set(scenarioVisibility[name] || BASE_MANAGERS);
+  if (typeof rebuild3DNodes === 'function') rebuild3DNodes();
+
+  document.getElementById('idle-msg').style.display = 'none';
+  document.getElementById('step-num').style.display = 'none';
+  document.getElementById('step-text').style.display = 'none';
+  document.getElementById('scenario-intro').style.display = 'flex';
+  document.getElementById('intro-title').textContent = scenarioTitles[name] || name;
+  document.getElementById('intro-desc').innerHTML = t('intro_' + name);
+
+  // Show start button in controls bar
+  document.getElementById('btn-start-scenario').style.display = '';
+}
+
+function startPendingScenario() {
+  if (!pendingScenario) return;
+  document.getElementById('scenario-intro').style.display = 'none';
+  document.getElementById('btn-start-scenario').style.display = 'none';
+  var name = pendingScenario;
+  pendingScenario = null;
+  autoAdvanceFirst = true;
+  runScenario(name);
+}
+
+async function prevStep() {
+  if (!scenarioRunning || globalStepIdx <= 1) return;
+  var targetStep = globalStepIdx - 2; // go back one step (0-based)
+  var scenarioName = currentScenarioName;
+
+  // Cancel current scenario via generation counter
+  scenarioGen++;
+  if (stepResolve) {
+    stepResolve();
+    stepResolve = null;
+  }
+  // Let the cancelled scenario unwind
+  await new Promise(function(r) { setTimeout(r, 20); });
+
+  // Reset everything
+  messages = [];
+  subscriptions = [];
+  highlightSubs = [];
+  piFlash = {};
+  glowManagers = {};
+  processImage = {
+    'TC_101.temperature': 820.0,
+    'PID_TOP.setpoint': 900.0,
+    'PID_TOP.output': 65.0,
+    'HR_TOP.power': 65.0,
+    'TC_102.temperature': 815.0,
+    'CYCLE_001.phase': 'rampe',
+  };
+  renderSubTable();
+  renderProcessImage();
+
+  // Set replay mode
+  replayMode = true;
+  replayTarget = targetStep;
+  globalStepIdx = 0;
+  scenarioRunning = false; // allow re-entry
+
+  // Re-run the scenario (will auto-advance in replay mode)
+  await runScenario(scenarioName);
+}
+
+function msgDuration() {
+  return 600 / getSpeed();
+}
+
+var COLORS = {
+  request: '#3b82f6',
+  write: '#3b82f6',
+  notify: '#f59e0b',
+  callback: '#10b981',
+  response: '#10b981',
+  internal: '#6366f1',
+  archive: '#ec4899',
+};
+
+// ── Scenario Registry ──
+var scenarioRegistry = {};
+
+function registerScenario(name, fn) {
+  scenarioRegistry[name] = fn;
+}
+
+async function runScenario(name) {
+  if (scenarioRunning) return;
+  currentScenarioName = name;
+  scenarioRunning = true;
+  currentGen = ++scenarioGen;
+  setButtons(true);
+  stepMode = true; // ALL scenarios are now step mode
+  messages = [];
+  highlightSubs = [];
+  globalStepIdx = 0;
+
+  // Set visible managers for this scenario
+  visibleManagers = new Set(scenarioVisibility[name] || BASE_MANAGERS);
+  if (typeof rebuild3DNodes === 'function') rebuild3DNodes();
+
+  document.getElementById('btn-step').disabled = false;
+  document.getElementById('btn-prev').disabled = true; // disabled at step 0
+
+  var scenarioFn = scenarioRegistry[name];
+  if (!scenarioFn) return;
+
+  try {
+    await scenarioFn();
+  } catch (e) {
+    if (e === 'scenario_cancelled') return;
+    throw e;
+  }
+
+  if (currentGen !== scenarioGen) return; // stale run
+
+  await wait(500);
+  hideStep();
+  scenarioRunning = false;
+  setButtons(false);
+  document.getElementById('btn-step').disabled = true;
+  document.getElementById('btn-prev').disabled = true;
+  replayMode = false;
+  replayTarget = -1;
+}
+
+function resetAll() {
+  messages = [];
+  subscriptions = [];
+  highlightSubs = [];
+  piFlash = {};
+  glowManagers = {};
+  visibleManagers = new Set(BASE_MANAGERS);
+  if (typeof rebuild3DNodes === 'function') rebuild3DNodes();
+  processImage = {
+    'TC_101.temperature': 820.0,
+    'PID_TOP.setpoint': 900.0,
+    'PID_TOP.output': 65.0,
+    'HR_TOP.power': 65.0,
+    'TC_102.temperature': 815.0,
+    'CYCLE_001.phase': 'rampe',
+  };
+  renderSubTable();
+  renderProcessImage();
+  hideStep();
+  scenarioRunning = false;
+  stepResolve = null;
+  pendingScenario = null;
+  replayMode = false;
+  replayTarget = -1;
+  globalStepIdx = 0;
+  document.getElementById('scenario-intro').style.display = 'none';
+  document.getElementById('btn-start-scenario').style.display = 'none';
+  setButtons(false);
+  document.getElementById('btn-step').disabled = true;
+  document.getElementById('btn-prev').disabled = true;
+}
+
+// === scenarios/cycle.js ===
+// ── Scenario: Cycle complet ──
+Object.assign(i18n.fr, {
+  cycle_1: '<b>Phase d\'initialisation</b> — Le <b>CTRL PID</b> appelle <code>dpConnect("onTemp", "TC_101.temperature")</code> pour s\'abonner a la temperature.',
+  cycle_2: 'Les <b>2 UI Managers</b> s\'abonnent a differents DPE via <code>dpConnect</code>. UI Operator: TC_101.temp + PID_TOP.output, UI Monitoring: TC_101.temp + PID_TOP.setpoint.',
+  cycle_3: 'L\'<b>automate</b> (PLC) envoie la temperature mesuree au <b>Driver</b> via <b>OPC UA</b>. Le Driver appelle <code>dpSet("TC_101.temperature", 845.2)</code>.',
+  cycle_4: 'L\'<b>EV</b> met a jour sa <b>process image</b> : TC_101.temperature = <code>845.2</code>',
+  cycle_5: 'L\'<b>EV</b> transmet au <b>DM</b> pour persistence (SQLite). En parallele, <b>Online Change</b> vers le <b>NGA Frontend</b> (\u2192 PostgreSQL).',
+  cycle_6: 'L\'<b>EV</b> notifie le <b>CTRL PID</b> \u2192 le CTRL appelle localement <code>onTemp(845.2)</code> et calcule une nouvelle commande PID.',
+  cycle_7: 'L\'<b>EV</b> notifie les <b>2 UI Managers</b> abonnes a TC_101.temp — distribution multicast. Chaque UI appelle son callback.',
+  cycle_8: 'Le <b>CTRL PID</b> a calcule une sortie de 72.5%. Il appelle <code>dpSet("PID_TOP.output", 72.5)</code>',
+  cycle_9: 'Persistance via <b>DM</b> (SQLite) + <b>Online Change</b> vers <b>NGA</b> (\u2192 PostgreSQL). Les <b>UI</b> abonnes a PID_TOP.output sont notifies.',
+  cycle_10: 'L\'<b>EV</b> notifie le <b>Driver</b> de la commande PID. Le Driver envoie un <b>OPC UA Write</b> vers l\'<b>automate</b> pour piloter les resistances a 72.5%.',
+  cycle_11: 'L\'<b>automate</b> applique la commande. La temperature monte. Le Driver lit <code>847.8</code> et relance le cycle avec un nouveau <code>dpSet</code>.',
+  cycle_12: '<b>Cycle complet !</b> Automate \u2192 Driver \u2192 EV (process image + DM/NGA) \u2192 notifications multicast \u2192 CTRL PID + 2 UI Managers + Driver \u2192 Automate. Le cycle se repete a chaque mesure.',
+});
+Object.assign(i18n.en, {
+  cycle_1: '<b>Initialization phase</b> — <b>CTRL PID</b> calls <code>dpConnect("onTemp", "TC_101.temperature")</code> to subscribe to temperature.',
+  cycle_2: 'The <b>2 UI Managers</b> subscribe to different DPEs via <code>dpConnect</code>. UI Operator: TC_101.temp + PID_TOP.output, UI Monitoring: TC_101.temp + PID_TOP.setpoint.',
+  cycle_3: '<b>PLC</b> sends measured temperature to <b>Driver</b> via <b>OPC UA</b>. Driver calls <code>dpSet("TC_101.temperature", 845.2)</code>.',
+  cycle_4: '<b>EV</b> updates its <b>process image</b>: TC_101.temperature = <code>845.2</code>',
+  cycle_5: '<b>EV</b> sends to <b>DM</b> for persistence (SQLite). In parallel, <b>Online Change</b> to <b>NGA Frontend</b> (\u2192 PostgreSQL).',
+  cycle_6: '<b>EV</b> notifies <b>CTRL PID</b> \u2192 CTRL locally calls <code>onTemp(845.2)</code> and computes new PID output.',
+  cycle_7: '<b>EV</b> notifies both <b>UI Managers</b> subscribed to TC_101.temp — multicast distribution. Each UI calls its callback.',
+  cycle_8: '<b>CTRL PID</b> computed output 72.5%. It calls <code>dpSet("PID_TOP.output", 72.5)</code>',
+  cycle_9: 'Persistence via <b>DM</b> (SQLite) + <b>Online Change</b> to <b>NGA</b> (\u2192 PostgreSQL). <b>UI</b> managers subscribed to PID_TOP.output are notified.',
+  cycle_10: '<b>EV</b> notifies <b>Driver</b> of PID output. Driver sends <b>OPC UA Write</b> to <b>PLC</b> to drive heating elements at 72.5%.',
+  cycle_11: '<b>PLC</b> applies command. Temperature rises. Driver reads <code>847.8</code> and restarts cycle with new <code>dpSet</code>.',
+  cycle_12: '<b>Full cycle!</b> PLC \u2192 Driver \u2192 EV (process image + DM/NGA) \u2192 multicast notifications \u2192 CTRL PID + 2 UI Managers + Driver \u2192 PLC. Cycle repeats with each measurement.',
+});
+
+async function scenarioCycle() {
+  // Start clean
+  subscriptions = [];
+  renderSubTable();
+  processImage['TC_101.temperature'] = 820.0;
+  processImage['PID_TOP.output'] = 65.0;
+  renderProcessImage();
+
+  var steps = 12;
+
+  // Step 1: CTRL PID dpConnect
+  showStep(1, steps, t('cycle_1'));
+  await waitForStep();
+  glowManager('ctrl_pid', 'rgba(16,185,129', 1200);
+  await addMessage('ctrl_pid', 'ev', 'dpConnect(onTemp, TC_101.temp)', COLORS.request, msgDuration());
+  glowManager('ev', 'rgba(59,130,246', 800);
+  subscriptions.push({ mgr: 'ctrl_pid', mgrLabel: 'CTRL PID', dpe: 'TC_101.temp', cb: 'onTemp' });
+  highlightSubs = [0];
+  renderSubTable();
+  await addMessage('ev', 'ev', 'register subscription', COLORS.internal, msgDuration() * 0.4);
+  // EV sends initial value
+  await addMessage('ev', 'ctrl_pid', 'notif(820.0)', COLORS.notify, msgDuration() * 0.7);
+  await addMessage('ctrl_pid', 'ctrl_pid', '-> callback onTemp()', COLORS.callback, msgDuration() * 0.3);
+  highlightSubs = [];
+  renderSubTable();
+
+  // Step 2: All 3 UIs dpConnect
+  showStep(2, steps, t('cycle_2'));
+  await waitForStep();
+  // UI1 subscribes to TC_101.temp and PID_TOP.output
+  glowManager('ui1', 'rgba(245,158,11', 1400);
+  await addMessage('ui1', 'ev', 'dpConnect(updateDisp, TC_101.temp)', COLORS.request, msgDuration());
+  glowManager('ev', 'rgba(59,130,246', 600);
+  subscriptions.push({ mgr: 'ui1', mgrLabel: 'UI Operator', dpe: 'TC_101.temp', cb: 'updateDisp' });
+  highlightSubs = [subscriptions.length - 1];
+  renderSubTable();
+  await addMessage('ev', 'ev', 'register', COLORS.internal, msgDuration() * 0.3);
+  await addMessage('ev', 'ui1', 'notif(820.0)', COLORS.notify, msgDuration() * 0.5);
+
+  await addMessage('ui1', 'ev', 'dpConnect(updateDisp, PID_TOP.output)', COLORS.request, msgDuration() * 0.8);
+  subscriptions.push({ mgr: 'ui1', mgrLabel: 'UI Operator', dpe: 'PID_TOP.output', cb: 'updateDisp' });
+  highlightSubs = [subscriptions.length - 1];
+  renderSubTable();
+  await addMessage('ev', 'ev', 'register', COLORS.internal, msgDuration() * 0.3);
+  await addMessage('ev', 'ui1', 'notif(65.0)', COLORS.notify, msgDuration() * 0.5);
+
+  // UI Monitoring subscribes to TC_101.temp and PID_TOP.setpoint
+  glowManager('ui2', 'rgba(234,179,8', 1200);
+  await addMessage('ui2', 'ev', 'dpConnect(updateTrend, TC_101.temp)', COLORS.request, msgDuration() * 0.8);
+  subscriptions.push({ mgr: 'ui2', mgrLabel: 'UI Monitoring', dpe: 'TC_101.temp', cb: 'updateTrend' });
+  highlightSubs = [subscriptions.length - 1];
+  renderSubTable();
+  await addMessage('ev', 'ev', 'register', COLORS.internal, msgDuration() * 0.3);
+  await addMessage('ev', 'ui2', 'notif(820.0)', COLORS.notify, msgDuration() * 0.5);
+
+  await addMessage('ui2', 'ev', 'dpConnect(checkAlarm, PID_TOP.setpoint)', COLORS.request, msgDuration() * 0.8);
+  subscriptions.push({ mgr: 'ui2', mgrLabel: 'UI Monitoring', dpe: 'PID_TOP.setpoint', cb: 'checkAlarm' });
+  highlightSubs = [subscriptions.length - 1];
+  renderSubTable();
+  await addMessage('ev', 'ev', 'register', COLORS.internal, msgDuration() * 0.3);
+  await addMessage('ev', 'ui2', 'notif(900.0)', COLORS.notify, msgDuration() * 0.5);
+  highlightSubs = [];
+  renderSubTable();
+
+  // Step 3: PLC sends value to Driver
+  showStep(3, steps, t('cycle_3'));
+  await waitForStep();
+  glowManager('plc', 'rgba(148,163,184', 1000);
+  await addMessage('plc', 'driver', 'OPC UA Read -> 845.2', '#94a3b8', msgDuration());
+  glowManager('driver', 'rgba(249,115,22', 1000);
+  await addMessage('driver', 'ev', 'dpSet(TC_101.temp, 845.2)', COLORS.write, msgDuration());
+
+  // Step 4: EV updates process image
+  showStep(4, steps, t('cycle_4'));
+  await waitForStep();
+  glowManager('ev', 'rgba(59,130,246', 800);
+  processImage['TC_101.temperature'] = 845.2;
+  piFlash['TC_101.temperature'] = true;
+  renderProcessImage();
+  await addMessage('ev', 'ev', 'update process image', COLORS.internal, msgDuration() * 0.4);
+  piFlash['TC_101.temperature'] = false;
+  renderProcessImage();
+
+  // Step 5: EV → DM (persistence) AND EV → NGA → PostgreSQL (Online Change) in parallel
+  showStep(5, steps, t('cycle_5'));
+  await waitForStep();
+  await addMessagesParallel([
+    { from: 'ev', to: 'dm', label: 'persistence (SQLite)', color: COLORS.internal, duration: msgDuration() * 0.6 },
+    { from: 'ev', to: 'nga', label: 'Online Change', color: COLORS.archive, duration: msgDuration() * 0.6 },
+  ]);
+  glowManager('dm', 'rgba(139,92,246', 600);
+  glowManager('nga', 'rgba(236,72,153', 500);
+  await addMessage('nga', 'pgsql', 'INSERT INTO history', '#336791', msgDuration() * 0.5);
+  glowManager('pgsql', 'rgba(51,103,145', 500);
+
+  // Step 6: Notify CTRL PID
+  showStep(6, steps, t('cycle_6'));
+  await waitForStep();
+  highlightSubs = [0];
+  renderSubTable();
+  await addMessage('ev', 'ctrl_pid', 'notif(845.2)', COLORS.notify, msgDuration());
+  glowManager('ctrl_pid', 'rgba(16,185,129', 1000);
+  await addMessage('ctrl_pid', 'ctrl_pid', '-> callback onTemp()', COLORS.callback, msgDuration() * 0.4);
+  highlightSubs = [];
+  renderSubTable();
+
+  // Step 7: Notify both UIs (multicast) — subscribed to TC_101.temp: UI Operator, UI Monitoring
+  showStep(7, steps, t('cycle_7'));
+  await waitForStep();
+  // UI1 and UI2 are subscribed to TC_101.temp
+  highlightSubs = [1, 3]; // indices of UI1 TC_101.temp and UI2 TC_101.temp
+  renderSubTable();
+  await addMessagesParallel([
+    { from: 'ev', to: 'ui1', label: 'notif(845.2)', color: COLORS.notify, duration: msgDuration() },
+    { from: 'ev', to: 'ui2', label: 'notif(845.2)', color: COLORS.notify, duration: msgDuration() },
+  ]);
+  glowManager('ui1', 'rgba(245,158,11', 800);
+  glowManager('ui2', 'rgba(234,179,8', 800);
+  await addMessagesParallel([
+    { from: 'ui1', to: 'ui1', label: '-> updateDisp()', color: COLORS.callback, duration: msgDuration() * 0.3 },
+    { from: 'ui2', to: 'ui2', label: '-> updateTrend()', color: COLORS.callback, duration: msgDuration() * 0.3 },
+  ]);
+  highlightSubs = [];
+  renderSubTable();
+
+  // Step 8: CTRL PID dpSet output
+  showStep(8, steps, t('cycle_8'));
+  await waitForStep();
+  glowManager('ctrl_pid', 'rgba(16,185,129', 800);
+  await addMessage('ctrl_pid', 'ev', 'dpSet(PID_TOP.output, 72.5)', COLORS.write, msgDuration());
+  glowManager('ev', 'rgba(59,130,246', 800);
+  processImage['PID_TOP.output'] = 72.5;
+  processImage['HR_TOP.power'] = 72.5;
+  piFlash['PID_TOP.output'] = true;
+  renderProcessImage();
+  await addMessage('ev', 'ev', 'update process image', COLORS.internal, msgDuration() * 0.3);
+  piFlash['PID_TOP.output'] = false;
+  renderProcessImage();
+
+  // Step 9: DM + NGA for output + notify UI1 (subscribed to PID_TOP.output)
+  showStep(9, steps, t('cycle_9'));
+  await waitForStep();
+  await addMessagesParallel([
+    { from: 'ev', to: 'dm', label: 'persistence (SQLite)', color: COLORS.internal, duration: msgDuration() * 0.5 },
+    { from: 'ev', to: 'nga', label: 'Online Change', color: COLORS.archive, duration: msgDuration() * 0.5 },
+  ]);
+  glowManager('dm', 'rgba(139,92,246', 500);
+  glowManager('nga', 'rgba(236,72,153', 500);
+  await addMessage('nga', 'pgsql', 'INSERT INTO history', '#336791', msgDuration() * 0.4);
+  glowManager('pgsql', 'rgba(51,103,145', 500);
+  // UI1 is subscribed to PID_TOP.output
+  highlightSubs = [2]; // index of UI1 PID_TOP.output
+  renderSubTable();
+  await addMessage('ev', 'ui1', 'notif(72.5%)', COLORS.notify, msgDuration());
+  glowManager('ui1', 'rgba(245,158,11', 800);
+  await addMessage('ui1', 'ui1', '-> updateDisp()', COLORS.callback, msgDuration() * 0.4);
+  highlightSubs = [];
+  renderSubTable();
+
+  // Step 10: Driver receives command + sends to PLC
+  showStep(10, steps, t('cycle_10'));
+  await waitForStep();
+  await addMessage('ev', 'driver', 'notif(72.5)', COLORS.notify, msgDuration());
+  glowManager('driver', 'rgba(249,115,22', 1200);
+  await addMessage('driver', 'plc', 'OPC UA Write -> 72.5%', '#94a3b8', msgDuration());
+  glowManager('plc', 'rgba(148,163,184', 800);
+
+  // Step 11: PLC responds with new temperature
+  showStep(11, steps, t('cycle_11'));
+  await waitForStep();
+  glowManager('plc', 'rgba(148,163,184', 1000);
+  await addMessage('plc', 'driver', 'OPC UA Read -> 847.8', '#94a3b8', msgDuration());
+  glowManager('driver', 'rgba(249,115,22', 800);
+  await addMessage('driver', 'ev', 'dpSet(TC_101.temp, 847.8)', COLORS.write, msgDuration());
+  processImage['TC_101.temperature'] = 847.8;
+  piFlash['TC_101.temperature'] = true;
+  renderProcessImage();
+  await wait(400);
+  piFlash['TC_101.temperature'] = false;
+  renderProcessImage();
+
+  // Step 12: Summary
+  showStep(12, steps, t('cycle_12'));
+  await waitForStep();
+  // Flash all managers sequentially for visual effect
+  var order = ['plc', 'driver', 'ev', 'dm', 'nga', 'ctrl_pid', 'ui1', 'ui2'];
+  for (var j = 0; j < order.length; j++) {
+    var id = order[j];
+    var c = managers[id].color;
+    var r = parseInt(c.slice(1,3), 16);
+    var g = parseInt(c.slice(3,5), 16);
+    var b = parseInt(c.slice(5,7), 16);
+    glowManager(id, 'rgba(' + r + ',' + g + ',' + b, 1500);
+    await wait(100);
+  }
+}
+
+registerScenario('cycle', scenarioCycle);
+
+// === scenarios/dpconnect.js ===
+// ── Scenario: dpConnect ──
+Object.assign(i18n.fr, {
+  dpConnect_1: 'Le <b>UI Operator</b> appelle <code>dpConnect("updateDisp", "TC_101.temperature")</code> — demande d\'abonnement',
+  dpConnect_2: 'L\'<b>EV</b> enregistre l\'abonnement dans sa <b>table interne</b> : UI Operator \u2192 TC_101.temp \u2192 updateDisp',
+  dpConnect_3: 'L\'<b>EV</b> lit la valeur initiale dans sa <b>process image</b> et envoie une <b>notification</b> au UI Operator',
+  dpConnect_4_tpl: 'Le <b>UI Operator</b> recoit la notification et appelle localement <b><code>updateDisp(${val})</code></b> — premier appel du callback',
+  dpConnect_5: '<b>dpConnect termine</b> — l\'abonnement est actif. A chaque futur <code>dpSet</code> sur TC_101.temp, l\'EV notifiera automatiquement le UI Operator.',
+});
+Object.assign(i18n.en, {
+  dpConnect_1: '<b>UI Operator</b> calls <code>dpConnect("updateDisp", "TC_101.temperature")</code> — subscription request',
+  dpConnect_2: '<b>EV</b> registers subscription in its <b>internal table</b>: UI Operator \u2192 TC_101.temp \u2192 updateDisp',
+  dpConnect_3: '<b>EV</b> reads initial value from <b>process image</b> and sends <b>notification</b> to UI Operator',
+  dpConnect_4_tpl: '<b>UI Operator</b> receives notification and locally calls <b><code>updateDisp(${val})</code></b> — first callback invocation',
+  dpConnect_5: '<b>dpConnect complete</b> — subscription is active. On every future <code>dpSet</code> on TC_101.temp, EV will automatically notify UI Operator.',
+});
+
+async function scenarioDpConnect() {
+  subscriptions = [];
+  renderSubTable();
+  renderProcessImage();
+
+  var steps = 5;
+
+  showStep(1, steps, t('dpConnect_1'));
+  await waitForStep();
+  glowManager('ui1', 'rgba(245,158,11', 1000);
+  await addMessage('ui1', 'ev', 'dpConnect(updateDisp, TC_101.temp)', COLORS.request, msgDuration());
+  await wait(200);
+
+  showStep(2, steps, t('dpConnect_2'));
+  await waitForStep();
+  glowManager('ev', 'rgba(59,130,246', 1000);
+  subscriptions.push({ mgr: 'ui1', mgrLabel: 'UI Operator', dpe: 'TC_101.temp', cb: 'updateDisp' });
+  highlightSubs = [subscriptions.length - 1];
+  renderSubTable();
+  await addMessage('ev', 'ev', 'register subscription', COLORS.internal, msgDuration() * 0.5);
+  await wait(300);
+
+  showStep(3, steps, t('dpConnect_3'));
+  await waitForStep();
+  piFlash['TC_101.temperature'] = true;
+  renderProcessImage();
+  await wait(300);
+  piFlash['TC_101.temperature'] = false;
+  renderProcessImage();
+  var val = processImage['TC_101.temperature'];
+  await addMessage('ev', 'ui1', 'notif(' + val.toFixed(1) + ')', COLORS.notify, msgDuration());
+  glowManager('ui1', 'rgba(245,158,11', 800);
+  await wait(200);
+
+  var step4Text = t('dpConnect_4_tpl').replace('${val}', val.toFixed(1));
+  showStep(4, steps, step4Text);
+  await waitForStep();
+  await addMessage('ui1', 'ui1', '-> callback updateDisp()', COLORS.callback, msgDuration() * 0.5);
+  highlightSubs = [];
+  renderSubTable();
+  await wait(300);
+
+  showStep(5, steps, t('dpConnect_5'));
+  await waitForStep();
+}
+
+registerScenario('dpConnect', scenarioDpConnect);
+
+// === scenarios/dpget.js ===
+// ── Scenario: dpGet ──
+Object.assign(i18n.fr, {
+  dpGet_1: 'Le <b>CTRL PID</b> appelle <code>dpGet("TC_101.temperature")</code> — requete envoyee a l\'<b>EV</b>',
+  dpGet_2: 'L\'<b>EV</b> lit la valeur dans sa <b>process image</b> en RAM : <code>820.0</code>',
+  dpGet_3: 'L\'<b>EV</b> retourne la valeur <code>820.0</code> au <b>CTRL PID</b> — operation terminee, aucun abonnement cree',
+});
+Object.assign(i18n.en, {
+  dpGet_1: '<b>CTRL PID</b> calls <code>dpGet("TC_101.temperature")</code> — request sent to <b>EV</b>',
+  dpGet_2: '<b>EV</b> reads the value from its <b>process image</b> in RAM: <code>820.0</code>',
+  dpGet_3: '<b>EV</b> returns value <code>820.0</code> to <b>CTRL PID</b> — operation complete, no subscription created',
+});
+
+async function scenarioDpGet() {
+  subscriptions = [];
+  renderSubTable();
+  renderProcessImage();
+
+  var steps = 3;
+
+  showStep(1, steps, t('dpGet_1'));
+  await waitForStep();
+  glowManager('ctrl_pid', 'rgba(16,185,129', 1200);
+  await addMessage('ctrl_pid', 'ev', 'dpGet(TC_101.temp)', COLORS.request, msgDuration());
+  await wait(200);
+
+  showStep(2, steps, t('dpGet_2'));
+  await waitForStep();
+  glowManager('ev', 'rgba(59,130,246', 800);
+  piFlash['TC_101.temperature'] = true;
+  renderProcessImage();
+  await addMessage('ev', 'ev', 'read process image', COLORS.internal, msgDuration() * 0.6);
+  piFlash['TC_101.temperature'] = false;
+  renderProcessImage();
+  await wait(200);
+
+  showStep(3, steps, t('dpGet_3'));
+  await waitForStep();
+  await addMessage('ev', 'ctrl_pid', 'response: 820.0', COLORS.response, msgDuration());
+  glowManager('ctrl_pid', 'rgba(16,185,129', 600);
+}
+
+registerScenario('dpGet', scenarioDpGet);
+
+// === scenarios/dpset.js ===
+// ── Scenario: dpSet ──
+Object.assign(i18n.fr, {
+  dpSet_1: 'L\'operateur modifie la consigne dans le panel. Le <b>UI Operator</b> appelle <code>dpSet("PID_TOP.setpoint", 950.0)</code>',
+  dpSet_2: 'L\'<b>EV</b> met a jour sa <b>process image</b> en RAM : PID_TOP.setpoint = <code>950.0</code>',
+  dpSet_3: 'L\'<b>EV</b> transmet au <b>DM</b> pour persistence (SQLite). En parallele, l\'EV envoie un <b>Online Change</b> au <b>NGA Frontend</b> (\u2192 PostgreSQL).',
+  dpSet_4: 'L\'<b>EV</b> notifie le <b>CTRL PID</b> (abonne a PID_TOP.setpoint). Le CTRL appelle son <b>callback <code>onSetpoint(950.0)</code></b> et adapte sa regulation.',
+  dpSet_5: 'L\'<b>EV</b> notifie le <b>Driver</b> (abonne via la config d\'adressage). Le Driver prepare l\'ecriture vers l\'automate.',
+  dpSet_6: 'Le <b>Driver</b> traduit la valeur en ecriture protocolaire et envoie un <b>OPC UA Write</b> vers l\'<b>automate</b>.',
+  dpSet_7: 'L\'<b>automate</b> recoit la consigne <code>950.0</code> et l\'applique au regulateur physique du four.',
+  dpSet_8: 'L\'<b>EV</b> notifie le <b>UI Monitoring</b> (abonne a PID_TOP.setpoint) qui met a jour la courbe de tendance et verifie les seuils d\'alarme.',
+  dpSet_9: '<b>dpSet termine</b> — La consigne operateur a traverse toute la chaine : <b>UI Operator \u2192 EV \u2192 DM (SQLite) + NGA (PostgreSQL) + CTRL PID + Driver \u2192 Automate</b>. Tous les managers abonnes ont ete notifies.',
+});
+Object.assign(i18n.en, {
+  dpSet_1: 'Operator changes the setpoint in the panel. <b>UI Operator</b> calls <code>dpSet("PID_TOP.setpoint", 950.0)</code>',
+  dpSet_2: '<b>EV</b> updates its <b>process image</b> in RAM: PID_TOP.setpoint = <code>950.0</code>',
+  dpSet_3: '<b>EV</b> sends to <b>DM</b> for persistence (SQLite). In parallel, EV sends <b>Online Change</b> to <b>NGA Frontend</b> (\u2192 PostgreSQL).',
+  dpSet_4: '<b>EV</b> notifies <b>CTRL PID</b> (subscribed to PID_TOP.setpoint). CTRL calls its <b>callback <code>onSetpoint(950.0)</code></b> and adjusts regulation.',
+  dpSet_5: '<b>EV</b> notifies <b>Driver</b> (subscribed via address config). Driver prepares write to PLC.',
+  dpSet_6: '<b>Driver</b> translates value to protocol write and sends <b>OPC UA Write</b> to <b>PLC</b>.',
+  dpSet_7: '<b>PLC</b> receives setpoint <code>950.0</code> and applies it to the furnace physical regulator.',
+  dpSet_8: '<b>EV</b> notifies <b>UI Monitoring</b> (subscribed to PID_TOP.setpoint) which updates the trend curve and checks alarm thresholds.',
+  dpSet_9: '<b>dpSet complete</b> — Operator setpoint traversed the full chain: <b>UI Operator \u2192 EV \u2192 DM (SQLite) + NGA (PostgreSQL) + CTRL PID + Driver \u2192 PLC</b>. All subscribed managers notified.',
+});
+
+async function scenarioDpSet() {
+  // Setup subscriptions
+  subscriptions = [
+    { mgr: 'ctrl_pid', mgrLabel: 'CTRL PID', dpe: 'PID_TOP.setpoint', cb: 'onSetpoint' },
+    { mgr: 'driver', mgrLabel: 'Driver', dpe: 'PID_TOP.setpoint', cb: 'address' },
+    { mgr: 'ui2', mgrLabel: 'UI Monitoring', dpe: 'PID_TOP.setpoint', cb: 'onSetpointChanged' },
+  ];
+  renderSubTable();
+  processImage['PID_TOP.setpoint'] = 900.0;
+  renderProcessImage();
+
+  var steps = 9;
+
+  // Step 1: UI1 sends dpSet
+  showStep(1, steps, t('dpSet_1'));
+  await waitForStep();
+  glowManager('ui1', 'rgba(245,158,11', 1000);
+  await addMessage('ui1', 'ev', 'dpSet(PID_TOP.setpoint, 950.0)', COLORS.write, msgDuration());
+  await wait(150);
+
+  // Step 2: EV updates process image
+  showStep(2, steps, t('dpSet_2'));
+  await waitForStep();
+  glowManager('ev', 'rgba(59,130,246', 800);
+  processImage['PID_TOP.setpoint'] = 950.0;
+  piFlash['PID_TOP.setpoint'] = true;
+  renderProcessImage();
+  await addMessage('ev', 'ev', 'update process image', COLORS.internal, msgDuration() * 0.5);
+  piFlash['PID_TOP.setpoint'] = false;
+  renderProcessImage();
+  await wait(150);
+
+  // Step 3: EV → DM (persistence) AND EV → NGA → PostgreSQL (Online Change) in parallel
+  showStep(3, steps, t('dpSet_3'));
+  await waitForStep();
+  await addMessagesParallel([
+    { from: 'ev', to: 'dm', label: 'persistence (SQLite)', color: COLORS.internal, duration: msgDuration() * 0.7 },
+    { from: 'ev', to: 'nga', label: 'Online Change', color: COLORS.archive, duration: msgDuration() * 0.7 },
+  ]);
+  glowManager('dm', 'rgba(139,92,246', 800);
+  glowManager('nga', 'rgba(236,72,153', 600);
+  await addMessage('nga', 'pgsql', 'INSERT INTO history', '#336791', msgDuration() * 0.6);
+  glowManager('pgsql', 'rgba(51,103,145', 600);
+  await wait(150);
+
+  // Step 4: EV notifies CTRL PID
+  showStep(4, steps, t('dpSet_4'));
+  await waitForStep();
+  highlightSubs = [0];
+  renderSubTable();
+  await addMessage('ev', 'ctrl_pid', 'notif(950.0)', COLORS.notify, msgDuration());
+  glowManager('ctrl_pid', 'rgba(16,185,129', 800);
+  await addMessage('ctrl_pid', 'ctrl_pid', '-> callback onSetpoint()', COLORS.callback, msgDuration() * 0.5);
+  highlightSubs = [];
+  renderSubTable();
+  await wait(150);
+
+  // Step 5: EV notifies Driver
+  showStep(5, steps, t('dpSet_5'));
+  await waitForStep();
+  highlightSubs = [1];
+  renderSubTable();
+  await addMessage('ev', 'driver', 'notif(950.0)', COLORS.notify, msgDuration());
+  glowManager('driver', 'rgba(249,115,22', 1000);
+  await addMessage('driver', 'driver', '-> callback address()', COLORS.callback, msgDuration() * 0.5);
+  highlightSubs = [];
+  renderSubTable();
+  await wait(150);
+
+  // Step 6: Driver → PLC
+  showStep(6, steps, t('dpSet_6'));
+  await waitForStep();
+  await addMessage('driver', 'plc', 'OPC UA Write -> 950.0', '#94a3b8', msgDuration());
+  glowManager('plc', 'rgba(148,163,184', 800);
+  await wait(150);
+
+  // Step 7: PLC applies
+  showStep(7, steps, t('dpSet_7'));
+  await waitForStep();
+  glowManager('plc', 'rgba(148,163,184', 1200);
+  await wait(600);
+
+  // Step 8: EV notifies UI Monitoring
+  showStep(8, steps, t('dpSet_8'));
+  await waitForStep();
+  highlightSubs = [2];
+  renderSubTable();
+  await addMessage('ev', 'ui2', 'notif(950.0)', COLORS.notify, msgDuration());
+  glowManager('ui2', 'rgba(234,179,8', 800);
+  await addMessage('ui2', 'ui2', '-> onSetpointChanged()', COLORS.callback, msgDuration() * 0.4);
+  highlightSubs = [];
+  renderSubTable();
+  await wait(150);
+
+  // Step 9: Summary
+  showStep(9, steps, t('dpSet_9'));
+  await waitForStep();
+}
+
+registerScenario('dpSet', scenarioDpSet);
+
+// === scenarios/history.js ===
+// ── Scenario: History Read ──
+Object.assign(i18n.fr, {
+  history_1: 'Le <b>UI Monitoring</b> demande l\'historique de TC_101.temperature sur les 2 dernieres heures via <code>dpGetPeriod()</code>.',
+  history_2: 'L\'<b>EV</b> recoit la requete et la transmet au <b>NGA Frontend Manager</b> (lecture historique).',
+  history_3: 'Le <b>NGA Frontend</b> interroge la base <b>PostgreSQL</b> pour recuperer les donnees archivees.',
+  history_4: '<b>PostgreSQL</b> retourne les donnees historiques au <b>NGA Frontend</b>.',
+  history_5: 'Le <b>NGA Frontend</b> transmet la reponse au <b>DM</b> (Data Manager) qui sert de relais pour le retour.',
+  history_6: 'Le <b>DM</b> transmet les donnees historiques a l\'<b>EV</b>.',
+  history_7: 'L\'<b>EV</b> retourne les donnees historiques au <b>UI Monitoring</b>. Le panel affiche la courbe de temperature.',
+  history_8: '<b>Lecture historique terminee !</b> Le flux complet : UI \u2192 EV \u2192 NGA Frontend \u2192 PostgreSQL \u2192 NGA Frontend \u2192 DM \u2192 EV \u2192 UI.',
+});
+Object.assign(i18n.en, {
+  history_1: '<b>UI Monitoring</b> requests history of TC_101.temperature for the last 2 hours via <code>dpGetPeriod()</code>.',
+  history_2: '<b>EV</b> receives the request and forwards it to the <b>NGA Frontend Manager</b> (history read).',
+  history_3: '<b>NGA Frontend</b> queries the <b>PostgreSQL</b> database to retrieve archived data.',
+  history_4: '<b>PostgreSQL</b> returns historical data to <b>NGA Frontend</b>.',
+  history_5: '<b>NGA Frontend</b> sends the response to <b>DM</b> (Data Manager) which relays the return path.',
+  history_6: '<b>DM</b> forwards historical data to <b>EV</b>.',
+  history_7: '<b>EV</b> returns historical data to <b>UI Monitoring</b>. The panel displays the temperature curve.',
+  history_8: '<b>History read complete!</b> Full flow: UI \u2192 EV \u2192 NGA Frontend \u2192 PostgreSQL \u2192 NGA Frontend \u2192 DM \u2192 EV \u2192 UI.',
+});
+
+async function scenarioHistoryRead() {
+  var steps = 8;
+
+  showStep(1, steps, t('history_1'));
+  await waitForStep();
+  glowManager('ui2', 'rgba(234,179,8', 1200);
+  await addMessage('ui2', 'ev', 'dpGetPeriod(TC_101.temp, -2h)', COLORS.request, msgDuration());
+  await wait(200);
+
+  showStep(2, steps, t('history_2'));
+  await waitForStep();
+  glowManager('ev', 'rgba(59,130,246', 800);
+  await addMessage('ev', 'nga', 'history read request', COLORS.archive, msgDuration());
+  await wait(200);
+
+  showStep(3, steps, t('history_3'));
+  await waitForStep();
+  glowManager('nga', 'rgba(236,72,153', 1000);
+  await addMessage('nga', 'pgsql', 'SELECT ... FROM history', '#336791', msgDuration());
+  await wait(200);
+
+  showStep(4, steps, t('history_4'));
+  await waitForStep();
+  glowManager('pgsql', 'rgba(51,103,145', 1000);
+  await addMessage('pgsql', 'nga', 'result set (N rows)', '#336791', msgDuration());
+  await wait(200);
+
+  showStep(5, steps, t('history_5'));
+  await waitForStep();
+  glowManager('nga', 'rgba(236,72,153', 800);
+  await addMessage('nga', 'dm', 'history response', COLORS.response, msgDuration());
+  await wait(200);
+
+  showStep(6, steps, t('history_6'));
+  await waitForStep();
+  glowManager('dm', 'rgba(139,92,246', 800);
+  await addMessage('dm', 'ev', 'history data', COLORS.response, msgDuration());
+  await wait(200);
+
+  showStep(7, steps, t('history_7'));
+  await waitForStep();
+  glowManager('ev', 'rgba(59,130,246', 600);
+  await addMessage('ev', 'ui2', 'response: history data', COLORS.response, msgDuration());
+  glowManager('ui2', 'rgba(234,179,8', 1200);
+  await wait(200);
+
+  showStep(8, steps, t('history_8'));
+  await waitForStep();
+  // Flash the full path for visual effect
+  var path = ['ui2', 'ev', 'nga', 'pgsql', 'nga', 'dm', 'ev', 'ui2'];
+  for (var j = 0; j < path.length; j++) {
+    var id = path[j];
+    var c = managers[id].color;
+    var r = parseInt(c.slice(1,3), 16);
+    var g = parseInt(c.slice(3,5), 16);
+    var b = parseInt(c.slice(5,7), 16);
+    glowManager(id, 'rgba(' + r + ',' + g + ',' + b, 1500);
+    await wait(120);
+  }
+}
+
+registerScenario('history', scenarioHistoryRead);
+
+// === scenarios/kafka.js ===
+// ── Scenario: Node.js → Kafka ──
+Object.assign(i18n.fr, {
+  kafka_1: 'L\'<b>automate</b> envoie la temperature et les vibrations au <b>Driver</b> via OPC UA. Le Driver appelle <code>dpSet</code> pour TC_101.temp et HR_TOP.vibration.',
+  kafka_2: 'L\'<b>EV</b> met a jour la <b>process image</b> et notifie le <b>JS Manager</b> (abonne via <code>dpConnect</code>).',
+  kafka_3: 'Le <b>JS Manager</b> transforme les donnees en message JSON et appelle <code>kafka.produce("furnace-telemetry", ...)</code>.',
+  kafka_4: 'Le message transite par le <b>Broker Kafka</b> vers le <b>Service de Maintenance Predictive</b>.',
+  kafka_5: 'Le <b>Service ML</b> analyse les vibrations : 2.4 mm/s > seuil 2.0 mm/s \u2192 <b>anomalie detectee</b> (usure roulement HR_TOP, confiance 87%).',
+  kafka_6: 'Le service publie une alerte sur le topic <code>furnace-alerts</code>. Le <b>JS Manager</b> consomme l\'alerte.',
+  kafka_7: 'Le <b>JS Manager</b> ecrit l\'alerte dans WinCC OA via <code>dpSet("HR_TOP.maint_alert", ...)</code>.',
+  kafka_8: 'L\'<b>EV</b> notifie le <b>UI Panel</b> qui affiche l\'alerte de maintenance predictive a l\'operateur.',
+  kafka_9: '<b>Streaming Kafka termine !</b> Flux complet : Automate \u2192 Driver \u2192 EV \u2192 JS Manager \u2192 Kafka \u2192 ML Predictif \u2192 Kafka \u2192 JS Manager \u2192 EV \u2192 UI Panel.',
+});
+Object.assign(i18n.en, {
+  kafka_1: '<b>PLC</b> sends temperature and vibration to <b>Driver</b> via OPC UA. Driver calls <code>dpSet</code> for TC_101.temp and HR_TOP.vibration.',
+  kafka_2: '<b>EV</b> updates the <b>process image</b> and notifies <b>JS Manager</b> (subscribed via <code>dpConnect</code>).',
+  kafka_3: '<b>JS Manager</b> transforms data into a JSON message and calls <code>kafka.produce("furnace-telemetry", ...)</code>.',
+  kafka_4: 'The message flows through the <b>Kafka Broker</b> to the <b>Predictive Maintenance Service</b>.',
+  kafka_5: 'The <b>ML Service</b> analyzes vibrations: 2.4 mm/s > threshold 2.0 mm/s \u2192 <b>anomaly detected</b> (HR_TOP bearing wear, confidence 87%).',
+  kafka_6: 'The service publishes an alert on topic <code>furnace-alerts</code>. <b>JS Manager</b> consumes the alert.',
+  kafka_7: '<b>JS Manager</b> writes the alert to WinCC OA via <code>dpSet("HR_TOP.maint_alert", ...)</code>.',
+  kafka_8: '<b>EV</b> notifies <b>UI Panel</b> which displays the predictive maintenance alert to the operator.',
+  kafka_9: '<b>Kafka streaming complete!</b> Full flow: PLC \u2192 Driver \u2192 EV \u2192 JS Manager \u2192 Kafka \u2192 Predictive ML \u2192 Kafka \u2192 JS Manager \u2192 EV \u2192 UI Panel.',
+});
+
+async function scenarioKafka() {
+  subscriptions = [
+    { mgr: 'js_mgr', mgrLabel: 'JS Manager', dpe: 'TC_101.temp', cb: 'onTelemetry' },
+    { mgr: 'js_mgr', mgrLabel: 'JS Manager', dpe: 'HR_TOP.vibration', cb: 'onTelemetry' },
+    { mgr: 'ui1', mgrLabel: 'UI Operator', dpe: 'HR_TOP.maint_alert', cb: 'showAlert' },
+  ];
+  renderSubTable();
+  processImage['HR_TOP.vibration'] = 1.8;
+  processImage['HR_TOP.maint_alert'] = '-';
+  processImage['HR_TOP.maint_confidence'] = '-';
+  renderProcessImage();
+
+  var steps = 9;
+
+  // Step 1: PLC → Driver → EV
+  showStep(1, steps, t('kafka_1'));
+  await waitForStep();
+  glowManager('plc', 'rgba(148,163,184', 1200);
+  await addMessage('plc', 'driver', 'OPC UA Read', '#94a3b8', msgDuration());
+  glowManager('driver', 'rgba(249,115,22', 1000);
+  await addMessagesParallel([
+    { from: 'driver', to: 'ev', label: 'dpSet(TC_101.temp, 845.2)', color: COLORS.write, duration: msgDuration() },
+    { from: 'driver', to: 'ev', label: 'dpSet(HR_TOP.vibr, 2.4)', color: COLORS.write, duration: msgDuration() * 0.9 },
+  ]);
+  await wait(150);
+
+  // Step 2: EV updates & notifies JS Manager
+  showStep(2, steps, t('kafka_2'));
+  await waitForStep();
+  glowManager('ev', 'rgba(59,130,246', 800);
+  processImage['TC_101.temperature'] = 845.2;
+  processImage['HR_TOP.vibration'] = 2.4;
+  piFlash['TC_101.temperature'] = true;
+  piFlash['HR_TOP.vibration'] = true;
+  renderProcessImage();
+  await addMessage('ev', 'ev', 'update process image', COLORS.internal, msgDuration() * 0.4);
+  piFlash['TC_101.temperature'] = false;
+  piFlash['HR_TOP.vibration'] = false;
+  renderProcessImage();
+  highlightSubs = [0, 1];
+  renderSubTable();
+  await addMessage('ev', 'js_mgr', 'notif(TC_101=845.2, vibr=2.4)', COLORS.notify, msgDuration());
+  glowManager('js_mgr', 'rgba(6,182,212', 1000);
+  highlightSubs = [];
+  renderSubTable();
+  await wait(150);
+
+  // Step 3: JS Manager → Kafka produce
+  showStep(3, steps, t('kafka_3'));
+  await waitForStep();
+  await addMessage('js_mgr', 'js_mgr', '\u2192 transform JSON', '#06b6d4', msgDuration() * 0.4);
+  await addMessage('js_mgr', 'kafka', 'kafka.produce(furnace-telemetry)', '#06b6d4', msgDuration());
+  glowManager('kafka', 'rgba(6,182,212', 800);
+  await wait(150);
+
+  // Step 4: Kafka → Predictive Maintenance
+  showStep(4, steps, t('kafka_4'));
+  await waitForStep();
+  await addMessage('kafka', 'pred_maint', 'kafka.consume(furnace-telemetry)', '#14b8a6', msgDuration());
+  glowManager('pred_maint', 'rgba(20,184,166', 1200);
+  await wait(150);
+
+  // Step 5: ML analysis
+  showStep(5, steps, t('kafka_5'));
+  await waitForStep();
+  await addMessage('pred_maint', 'pred_maint', 'ML: vibr 2.4 > seuil 2.0', '#14b8a6', msgDuration() * 0.8);
+  await wait(400);
+
+  // Step 6: Alert back via Kafka
+  showStep(6, steps, t('kafka_6'));
+  await waitForStep();
+  await addMessage('pred_maint', 'kafka', 'kafka.produce(furnace-alerts)', '#14b8a6', msgDuration());
+  glowManager('kafka', 'rgba(6,182,212', 800);
+  await addMessage('kafka', 'js_mgr', 'kafka.consume(furnace-alerts)', '#06b6d4', msgDuration());
+  glowManager('js_mgr', 'rgba(6,182,212', 1000);
+  await wait(150);
+
+  // Step 7: JS Manager → WinCC OA
+  showStep(7, steps, t('kafka_7'));
+  await waitForStep();
+  await addMessage('js_mgr', 'ev', 'dpSet(HR_TOP.maint_alert)', COLORS.write, msgDuration());
+  glowManager('ev', 'rgba(59,130,246', 800);
+  processImage['HR_TOP.maint_alert'] = 'Bearing wear';
+  processImage['HR_TOP.maint_confidence'] = 87;
+  piFlash['HR_TOP.maint_alert'] = true;
+  piFlash['HR_TOP.maint_confidence'] = true;
+  renderProcessImage();
+  await addMessage('ev', 'ev', 'update process image', COLORS.internal, msgDuration() * 0.4);
+  piFlash['HR_TOP.maint_alert'] = false;
+  piFlash['HR_TOP.maint_confidence'] = false;
+  renderProcessImage();
+  await wait(150);
+
+  // Step 8: EV → UI notification
+  showStep(8, steps, t('kafka_8'));
+  await waitForStep();
+  highlightSubs = [2];
+  renderSubTable();
+  await addMessage('ev', 'ui1', 'notif(HR_TOP.maint_alert)', COLORS.notify, msgDuration());
+  glowManager('ui1', 'rgba(245,158,11', 1000);
+  await addMessage('ui1', 'ui1', '\u2192 callback updateAlert()', COLORS.callback, msgDuration() * 0.4);
+  highlightSubs = [];
+  renderSubTable();
+  await wait(150);
+
+  // Step 9: Summary
+  showStep(9, steps, t('kafka_9'));
+  await waitForStep();
+  var path = ['plc', 'driver', 'ev', 'js_mgr', 'kafka', 'pred_maint', 'kafka', 'js_mgr', 'ev', 'ui1'];
+  for (var j = 0; j < path.length; j++) {
+    var id = path[j];
+    var c = managers[id].color;
+    var r = parseInt(c.slice(1,3), 16);
+    var g = parseInt(c.slice(3,5), 16);
+    var b = parseInt(c.slice(5,7), 16);
+    glowManager(id, 'rgba(' + r + ',' + g + ',' + b, 1500);
+    await wait(100);
+  }
+}
+
+registerScenario('kafka', scenarioKafka);
+
+// === scenarios/mcp.js ===
+// ── Scenario: MCP / Claude Desktop App ──
+Object.assign(i18n.fr, {
+  mcp_1: 'L\'ingenieur maintenance ouvre <b>Claude Desktop App</b> et saisit : "Le four met trop de temps a atteindre la consigne. Analyse les parametres PID et propose un reglage."',
+  mcp_2: '<b>Claude Desktop App</b> envoie le prompt a l\'<b>API Anthropic</b> avec la liste des tools MCP disponibles (get_process_data, get_alarms, get_trend_data).',
+  mcp_3: 'L\'<b>API Anthropic</b> decide d\'appeler le tool <code>get_process_data</code> pour lire les parametres PID actuels (Kp, Ki, Kd), la consigne et la temperature.',
+  mcp_4: '<b>Claude Desktop App</b> appelle le <b>MCP Server</b> (passerelle Node.js). Le MCP Server fait un <code>dpGet</code> sur l\'<b>EV</b> : PID_TOP.kp=1.2, ki=1.0, kd=0.3, setpoint=900, TC_101=845.',
+  mcp_5: '<b>Claude Desktop App</b> renvoie le resultat a l\'<b>API Anthropic</b>. Claude demande les tendances via <code>get_trend_data(TC_101, PID_TOP.output, -1h)</code> pour analyser la reponse.',
+  mcp_6: 'Le <b>MCP Server</b> fait un <code>dpGetPeriod</code> sur l\'<b>EV</b>. L\'EV interroge le <b>NGA Frontend</b> \u2192 <b>PostgreSQL</b>. Claude recoit la courbe de temperature et la sortie PID sur 1h.',
+  mcp_7: 'L\'<b>API Anthropic</b> analyse : temps de montee 45min (lent), depassement 2%. Recommandation : "Augmenter Kp de 1.2 a 2.1, reduire Ki de 1.0 a 0.8 pour une reponse plus rapide."',
+  mcp_8: '<b>Optimisation PID terminee !</b> Flux : Claude Desktop App \u2194 API Anthropic \u2192 MCP Server (passerelle) \u2192 EV (dpGet/dpGetPeriod) \u2192 retour. Claude analyse les courbes et propose un reglage.',
+});
+Object.assign(i18n.en, {
+  mcp_1: 'Maintenance engineer opens <b>Claude Desktop App</b> and types: "The furnace takes too long to reach setpoint. Analyze PID parameters and suggest tuning."',
+  mcp_2: '<b>Claude Desktop App</b> sends the prompt to <b>Anthropic API</b> with the list of available MCP tools (get_process_data, get_alarms, get_trend_data).',
+  mcp_3: '<b>Anthropic API</b> decides to call the <code>get_process_data</code> tool to read current PID parameters (Kp, Ki, Kd), setpoint and temperature.',
+  mcp_4: '<b>Claude Desktop App</b> calls the <b>MCP Server</b> (Node.js gateway). The MCP Server performs a <code>dpGet</code> on <b>EV</b>: PID_TOP.kp=1.2, ki=1.0, kd=0.3, setpoint=900, TC_101=845.',
+  mcp_5: '<b>Claude Desktop App</b> sends the result back to <b>Anthropic API</b>. Claude requests trends via <code>get_trend_data(TC_101, PID_TOP.output, -1h)</code> to analyze response.',
+  mcp_6: '<b>MCP Server</b> performs a <code>dpGetPeriod</code> on <b>EV</b>. EV queries <b>NGA Frontend</b> \u2192 <b>PostgreSQL</b>. Claude receives temperature curve and PID output over 1h.',
+  mcp_7: '<b>Anthropic API</b> analyzes: rise time 45min (slow), overshoot 2%. Recommendation: "Increase Kp from 1.2 to 2.1, reduce Ki from 1.0 to 0.8 for faster response."',
+  mcp_8: '<b>PID optimization complete!</b> Flow: Claude Desktop App \u2194 Anthropic API \u2192 MCP Server (gateway) \u2192 EV (dpGet/dpGetPeriod) \u2192 return. Claude analyzes curves and suggests tuning.',
+});
+
+async function scenarioMcp() {
+  subscriptions = [];
+  renderSubTable();
+  renderProcessImage();
+
+  var steps = 8;
+
+  // Step 1: User types prompt in Claude Desktop App
+  showStep(1, steps, t('mcp_1'));
+  await waitForStep();
+  glowManager('claude_app', 'rgba(217,70,239', 1200);
+  await addMessage('claude_app', 'claude_app', 'PID tuning request', '#d946ef', msgDuration() * 0.5);
+  await wait(150);
+
+  // Step 2: Claude Desktop App sends to Anthropic API
+  showStep(2, steps, t('mcp_2'));
+  await waitForStep();
+  await addMessage('claude_app', 'anthropic', 'API: prompt + tools MCP', '#d946ef', msgDuration());
+  glowManager('anthropic', 'rgba(217,70,239', 1000);
+  await wait(150);
+
+  // Step 3: Anthropic returns tool_use get_process_data
+  showStep(3, steps, t('mcp_3'));
+  await waitForStep();
+  await addMessage('anthropic', 'claude_app', 'tool_use: get_process_data', '#d946ef', msgDuration());
+  glowManager('claude_app', 'rgba(217,70,239', 800);
+  await wait(100);
+
+  // Step 4: Claude Desktop App calls MCP Server, which queries EV for PID params
+  showStep(4, steps, t('mcp_4'));
+  await waitForStep();
+  await addMessage('claude_app', 'mcp_server', 'MCP: get_process_data', '#a855f7', msgDuration());
+  glowManager('mcp_server', 'rgba(168,85,247', 800);
+  await addMessage('mcp_server', 'ev', 'dpGet(PID_TOP.kp/ki/kd, TC_101)', COLORS.request, msgDuration());
+  glowManager('ev', 'rgba(59,130,246', 600);
+  piFlash['TC_101.temperature'] = true;
+  piFlash['PID_TOP.output'] = true;
+  piFlash['PID_TOP.setpoint'] = true;
+  renderProcessImage();
+  await addMessage('ev', 'mcp_server', 'response: PID params + values', COLORS.response, msgDuration());
+  piFlash['TC_101.temperature'] = false;
+  piFlash['PID_TOP.output'] = false;
+  piFlash['PID_TOP.setpoint'] = false;
+  renderProcessImage();
+  await addMessage('mcp_server', 'claude_app', 'tool_result: {kp:1.2, ki:1.0, ...}', '#a855f7', msgDuration());
+  await wait(150);
+
+  // Step 5: Claude sends tool_result to Anthropic, gets second tool_use
+  showStep(5, steps, t('mcp_5'));
+  await waitForStep();
+  await addMessage('claude_app', 'anthropic', 'tool_result + continuation', '#d946ef', msgDuration() * 0.8);
+  glowManager('anthropic', 'rgba(217,70,239', 1000);
+  await addMessage('anthropic', 'claude_app', 'tool_use: get_trend_data', '#d946ef', msgDuration() * 0.8);
+  glowManager('claude_app', 'rgba(217,70,239', 800);
+  await wait(150);
+
+  // Step 6: Second MCP call for trends → EV → NGA → PostgreSQL
+  showStep(6, steps, t('mcp_6'));
+  await waitForStep();
+  await addMessage('claude_app', 'mcp_server', 'MCP: get_trend_data(TC_101, PID_TOP)', '#a855f7', msgDuration() * 0.8);
+  glowManager('mcp_server', 'rgba(168,85,247', 600);
+  await addMessage('mcp_server', 'ev', 'dpGetPeriod(TC_101, PID_TOP.output, -1h)', COLORS.request, msgDuration() * 0.8);
+  glowManager('ev', 'rgba(59,130,246', 600);
+  await addMessage('ev', 'nga', 'history read', COLORS.archive, msgDuration() * 0.6);
+  glowManager('nga', 'rgba(236,72,153', 600);
+  await addMessage('nga', 'pgsql', 'SELECT ... FROM history', '#336791', msgDuration() * 0.6);
+  glowManager('pgsql', 'rgba(51,103,145', 600);
+  await addMessage('pgsql', 'nga', 'result set', '#336791', msgDuration() * 0.6);
+  await addMessage('nga', 'ev', 'history data', COLORS.response, msgDuration() * 0.6);
+  await addMessage('ev', 'mcp_server', 'response: temp + PID curves', COLORS.response, msgDuration() * 0.8);
+  await addMessage('mcp_server', 'claude_app', 'tool_result: [{ts,temp,pid}...]', '#a855f7', msgDuration() * 0.8);
+  await wait(150);
+
+  // Step 7: Final response from Anthropic — PID tuning recommendation
+  showStep(7, steps, t('mcp_7'));
+  await waitForStep();
+  await addMessage('claude_app', 'anthropic', 'tool_result + continuation', '#d946ef', msgDuration() * 0.8);
+  glowManager('anthropic', 'rgba(217,70,239', 1200);
+  await addMessage('anthropic', 'claude_app', 'PID recommendation: Kp=2.1, Ki=0.8', '#d946ef', msgDuration());
+  glowManager('claude_app', 'rgba(217,70,239', 1500);
+  await wait(200);
+
+  // Step 8: Summary
+  showStep(8, steps, t('mcp_8'));
+  await waitForStep();
+  var path = ['claude_app', 'anthropic', 'claude_app', 'mcp_server', 'ev', 'mcp_server', 'claude_app'];
+  for (var j = 0; j < path.length; j++) {
+    var id = path[j];
+    var c = managers[id].color;
+    var r = parseInt(c.slice(1,3), 16);
+    var g = parseInt(c.slice(3,5), 16);
+    var b = parseInt(c.slice(5,7), 16);
+    glowManager(id, 'rgba(' + r + ',' + g + ',' + b, 1500);
+    await wait(100);
+  }
+}
+
+registerScenario('mcp', scenarioMcp);
+
+// === scenarios/plclive.js ===
+// ── Scenario: PLC Live ──
+Object.assign(i18n.fr, {
+  plcLive_1: 'La temperature dans le four change spontanement. L\'<b>automate</b> envoie la nouvelle valeur au <b>Driver</b> via OPC UA.',
+  plcLive_2: 'Le <b>Driver</b> appelle <code>dpSet("TC_101.temperature", 852.7)</code> vers l\'<b>EV</b>.',
+  plcLive_3: 'L\'<b>EV</b> met a jour sa <b>process image</b> et transmet au <b>DM</b> (SQLite) + <b>NGA Frontend</b> (\u2192 PostgreSQL).',
+  plcLive_4: 'L\'<b>EV</b> notifie le <b>CTRL PID</b> (abonne a TC_101.temperature). Le CTRL recalcule la commande PID.',
+  plcLive_5: 'L\'<b>EV</b> notifie les <b>2 UI Managers</b> abonnes — distribution <b>multicast</b>. Chaque UI met a jour son affichage.',
+  plcLive_6: '<b>Flux PLC Live termine !</b> Un changement dans l\'automate traverse : PLC \u2192 Driver \u2192 EV \u2192 DM/NGA \u2192 CTRL PID + UI Managers. Les UIs sont mis a jour en temps reel sans interrogation.',
+});
+Object.assign(i18n.en, {
+  plcLive_1: 'Temperature in the furnace changes spontaneously. <b>PLC</b> sends the new value to <b>Driver</b> via OPC UA.',
+  plcLive_2: '<b>Driver</b> calls <code>dpSet("TC_101.temperature", 852.7)</code> on <b>EV</b>.',
+  plcLive_3: '<b>EV</b> updates its <b>process image</b> and sends to <b>DM</b> (SQLite) + <b>NGA Frontend</b> (\u2192 PostgreSQL).',
+  plcLive_4: '<b>EV</b> notifies <b>CTRL PID</b> (subscribed to TC_101.temperature). CTRL recomputes the PID output.',
+  plcLive_5: '<b>EV</b> notifies both <b>UI Managers</b> — <b>multicast</b> distribution. Each UI updates its display.',
+  plcLive_6: '<b>PLC Live complete!</b> A PLC change traverses: PLC \u2192 Driver \u2192 EV \u2192 DM/NGA \u2192 CTRL PID + UI Managers. UIs update in real-time without polling.',
+});
+
+async function scenarioPlcLive() {
+  subscriptions = [
+    { mgr: 'ctrl_pid', mgrLabel: 'CTRL PID', dpe: 'TC_101.temp', cb: 'onTemp' },
+    { mgr: 'ui1', mgrLabel: 'UI Operator', dpe: 'TC_101.temp', cb: 'updateDisp' },
+    { mgr: 'ui2', mgrLabel: 'UI Monitoring', dpe: 'TC_101.temp', cb: 'updateTrend' },
+  ];
+  renderSubTable();
+  processImage['TC_101.temperature'] = 845.0;
+  renderProcessImage();
+
+  var steps = 6;
+
+  // Step 1: PLC temperature changes → Driver via OPC UA
+  showStep(1, steps, t('plcLive_1'));
+  await waitForStep();
+  glowManager('plc', 'rgba(148,163,184', 1200);
+  await addMessage('plc', 'driver', 'OPC UA Read -> 852.7', '#94a3b8', msgDuration());
+  glowManager('driver', 'rgba(249,115,22', 1000);
+  await wait(150);
+
+  // Step 2: Driver → EV dpSet
+  showStep(2, steps, t('plcLive_2'));
+  await waitForStep();
+  await addMessage('driver', 'ev', 'dpSet(TC_101.temp, 852.7)', COLORS.write, msgDuration());
+  glowManager('ev', 'rgba(59,130,246', 800);
+  processImage['TC_101.temperature'] = 852.7;
+  piFlash['TC_101.temperature'] = true;
+  renderProcessImage();
+  await addMessage('ev', 'ev', 'update process image', COLORS.internal, msgDuration() * 0.4);
+  piFlash['TC_101.temperature'] = false;
+  renderProcessImage();
+  await wait(150);
+
+  // Step 3: EV → DM + NGA → PostgreSQL
+  showStep(3, steps, t('plcLive_3'));
+  await waitForStep();
+  await addMessagesParallel([
+    { from: 'ev', to: 'dm', label: 'persistence (SQLite)', color: COLORS.internal, duration: msgDuration() * 0.6 },
+    { from: 'ev', to: 'nga', label: 'Online Change', color: COLORS.archive, duration: msgDuration() * 0.6 },
+  ]);
+  glowManager('dm', 'rgba(139,92,246', 600);
+  glowManager('nga', 'rgba(236,72,153', 500);
+  await addMessage('nga', 'pgsql', 'INSERT INTO history', '#336791', msgDuration() * 0.5);
+  glowManager('pgsql', 'rgba(51,103,145', 500);
+  await wait(150);
+
+  // Step 4: EV notifies CTRL PID
+  showStep(4, steps, t('plcLive_4'));
+  await waitForStep();
+  highlightSubs = [0];
+  renderSubTable();
+  await addMessage('ev', 'ctrl_pid', 'notif(852.7)', COLORS.notify, msgDuration());
+  glowManager('ctrl_pid', 'rgba(16,185,129', 1000);
+  await addMessage('ctrl_pid', 'ctrl_pid', '-> callback onTemp()', COLORS.callback, msgDuration() * 0.4);
+  highlightSubs = [];
+  renderSubTable();
+  await wait(150);
+
+  // Step 5: EV notifies both UIs (multicast)
+  showStep(5, steps, t('plcLive_5'));
+  await waitForStep();
+  highlightSubs = [1, 2];
+  renderSubTable();
+  await addMessagesParallel([
+    { from: 'ev', to: 'ui1', label: 'notif(852.7)', color: COLORS.notify, duration: msgDuration() },
+    { from: 'ev', to: 'ui2', label: 'notif(852.7)', color: COLORS.notify, duration: msgDuration() },
+  ]);
+  glowManager('ui1', 'rgba(245,158,11', 800);
+  glowManager('ui2', 'rgba(234,179,8', 800);
+  await addMessagesParallel([
+    { from: 'ui1', to: 'ui1', label: '-> updateDisp()', color: COLORS.callback, duration: msgDuration() * 0.3 },
+    { from: 'ui2', to: 'ui2', label: '-> updateTrend()', color: COLORS.callback, duration: msgDuration() * 0.3 },
+  ]);
+  highlightSubs = [];
+  renderSubTable();
+  await wait(150);
+
+  // Step 6: Summary
+  showStep(6, steps, t('plcLive_6'));
+  await waitForStep();
+  var path = ['plc', 'driver', 'ev', 'dm', 'nga', 'pgsql', 'ctrl_pid', 'ui1', 'ui2'];
+  for (var j = 0; j < path.length; j++) {
+    var id = path[j];
+    var c = managers[id].color;
+    var r = parseInt(c.slice(1,3), 16);
+    var g = parseInt(c.slice(3,5), 16);
+    var b = parseInt(c.slice(5,7), 16);
+    glowManager(id, 'rgba(' + r + ',' + g + ',' + b, 1500);
+    await wait(100);
+  }
+}
+
+registerScenario('plcLive', scenarioPlcLive);
+
+// === scenarios/uns.js ===
+// ── Scenario: UNS / MQTT Publisher ──
+Object.assign(i18n.fr, {
+  uns_1: 'L\'<b>automate</b> envoie la temperature mesuree au <b>Driver</b> via OPC UA. Le Driver appelle <code>dpSet("TC_101.temperature", 847.3)</code>.',
+  uns_2: 'L\'<b>EV</b> met a jour la <b>process image</b> et notifie le <b>MQTT Publisher</b> (abonne a TC_101.temp, PID_TOP.output, CYCLE_001.status, CYCLE_001.part_count).',
+  uns_3: 'Le <b>MQTT Publisher</b> formate le payload JSON UNS et publie sur le <b>MQTT Broker</b> : topic <code>uns/paris/building-A/furnace-01/TC_101/temperature</code>.',
+  uns_4: 'Le <b>MES</b> (abonne a <code>uns/+/+/furnace-01/CYCLE_001/#</code>) recoit les donnees de production : statut du cycle, nombre de pieces traitees, qualite.',
+  uns_5: 'Le <b>Cloud Historian</b> (abonne a <code>uns/#</code>) recoit <b>toutes</b> les donnees brutes (temperatures, sorties PID, statut) et les archive pour l\'analyse long terme et l\'IA/ML.',
+  uns_6: 'Le <b>CTRL PID</b> calcule une nouvelle sortie (73.1%). Le <b>MQTT Publisher</b> publie <code>uns/.../PID_TOP/output</code>. Le MES et le Cloud Historian recoivent chacun les donnees selon leur abonnement.',
+  uns_7: '<b>UNS termine !</b> Architecture decouplees : WinCC OA publie via MQTT, chaque consommateur s\'abonne aux topics qui l\'interessent (MES \u2192 production, Historian \u2192 tout). Topics hierarchiques ISA-95.',
+});
+Object.assign(i18n.en, {
+  uns_1: '<b>PLC</b> sends measured temperature to <b>Driver</b> via OPC UA. Driver calls <code>dpSet("TC_101.temperature", 847.3)</code>.',
+  uns_2: '<b>EV</b> updates the <b>process image</b> and notifies the <b>MQTT Publisher</b> (subscribed to TC_101.temp, PID_TOP.output, CYCLE_001.status, CYCLE_001.part_count).',
+  uns_3: '<b>MQTT Publisher</b> formats the UNS JSON payload and publishes to <b>MQTT Broker</b>: topic <code>uns/paris/building-A/furnace-01/TC_101/temperature</code>.',
+  uns_4: '<b>MES</b> (subscribed to <code>uns/+/+/furnace-01/CYCLE_001/#</code>) receives production data: cycle status, part count, quality.',
+  uns_5: '<b>Cloud Historian</b> (subscribed to <code>uns/#</code>) receives <b>all</b> raw data (temperatures, PID outputs, status) and archives for long-term analytics and AI/ML.',
+  uns_6: '<b>CTRL PID</b> computes new output (73.1%). <b>MQTT Publisher</b> publishes <code>uns/.../PID_TOP/output</code>. MES and Cloud Historian each receive data per their subscription.',
+  uns_7: '<b>UNS complete!</b> Decoupled architecture: WinCC OA publishes via MQTT, each consumer subscribes to relevant topics (MES \u2192 production, Historian \u2192 all). Hierarchical ISA-95 topics.',
+});
+
+async function scenarioUns() {
+  subscriptions = [
+    { mgr: 'mqtt_pub', mgrLabel: 'MQTT Publisher', dpe: 'TC_101.temp', cb: 'onValueChanged' },
+    { mgr: 'mqtt_pub', mgrLabel: 'MQTT Publisher', dpe: 'PID_TOP.output', cb: 'onValueChanged' },
+    { mgr: 'mqtt_pub', mgrLabel: 'MQTT Publisher', dpe: 'CYCLE_001.status', cb: 'onValueChanged' },
+    { mgr: 'mqtt_pub', mgrLabel: 'MQTT Publisher', dpe: 'CYCLE_001.part_count', cb: 'onValueChanged' },
+  ];
+  renderSubTable();
+  renderProcessImage();
+
+  var steps = 7;
+
+  // Step 1: PLC → Driver → EV
+  showStep(1, steps, t('uns_1'));
+  await waitForStep();
+  glowManager('plc', 'rgba(148,163,184', 1200);
+  await addMessage('plc', 'driver', 'OPC UA Read', '#94a3b8', msgDuration());
+  glowManager('driver', 'rgba(249,115,22', 1000);
+  await addMessage('driver', 'ev', 'dpSet(TC_101.temp, 847.3)', COLORS.write, msgDuration());
+  await wait(150);
+
+  // Step 2: EV updates & notifies MQTT Publisher
+  showStep(2, steps, t('uns_2'));
+  await waitForStep();
+  glowManager('ev', 'rgba(59,130,246', 800);
+  processImage['TC_101.temperature'] = 847.3;
+  piFlash['TC_101.temperature'] = true;
+  renderProcessImage();
+  await addMessage('ev', 'ev', 'update process image', COLORS.internal, msgDuration() * 0.4);
+  piFlash['TC_101.temperature'] = false;
+  renderProcessImage();
+  highlightSubs = [0];
+  renderSubTable();
+  await addMessage('ev', 'mqtt_pub', 'notif(TC_101=847.3)', COLORS.notify, msgDuration());
+  glowManager('mqtt_pub', 'rgba(34,211,238', 1000);
+  highlightSubs = [];
+  renderSubTable();
+  await wait(150);
+
+  // Step 3: MQTT Publisher → Mosquitto
+  showStep(3, steps, t('uns_3'));
+  await waitForStep();
+  await addMessage('mqtt_pub', 'mqtt_pub', 'format UNS payload', '#22d3ee', msgDuration() * 0.4);
+  await addMessage('mqtt_pub', 'mqtt_broker', 'PUBLISH uns/.../TC_101/temp', '#22d3ee', msgDuration());
+  glowManager('mqtt_broker', 'rgba(34,211,238', 1000);
+  await wait(150);
+
+  // Step 4: Broker → MES (production data)
+  showStep(4, steps, t('uns_4'));
+  await waitForStep();
+  await addMessage('mqtt_broker', 'uns_mes', 'uns/.../CYCLE_001/status + part_count', '#84cc16', msgDuration());
+  glowManager('uns_mes', 'rgba(132,204,22', 1200);
+  await addMessage('uns_mes', 'uns_mes', 'update production tracking', '#84cc16', msgDuration() * 0.4);
+  await wait(150);
+
+  // Step 5: Broker → Cloud Historian (all raw data)
+  showStep(5, steps, t('uns_5'));
+  await waitForStep();
+  await addMessage('mqtt_broker', 'uns_hist', 'uns/.../TC_101/temp (all topics)', '#84cc16', msgDuration());
+  glowManager('uns_hist', 'rgba(132,204,22', 1200);
+  await addMessage('uns_hist', 'uns_hist', 'archive to data lake', '#84cc16', msgDuration() * 0.4);
+  await wait(150);
+
+  // Step 6: CTRL PID output → MQTT Publisher → Broker
+  showStep(6, steps, t('uns_6'));
+  await waitForStep();
+  glowManager('ctrl_pid', 'rgba(16,185,129', 800);
+  await addMessage('ctrl_pid', 'ev', 'dpSet(PID_TOP.output, 73.1)', COLORS.write, msgDuration() * 0.8);
+  processImage['PID_TOP.output'] = 73.1;
+  piFlash['PID_TOP.output'] = true;
+  renderProcessImage();
+  await addMessage('ev', 'ev', 'update process image', COLORS.internal, msgDuration() * 0.3);
+  piFlash['PID_TOP.output'] = false;
+  renderProcessImage();
+  highlightSubs = [1];
+  renderSubTable();
+  await addMessage('ev', 'mqtt_pub', 'notif(PID_TOP.output=73.1)', COLORS.notify, msgDuration() * 0.8);
+  glowManager('mqtt_pub', 'rgba(34,211,238', 800);
+  highlightSubs = [];
+  renderSubTable();
+  await addMessage('mqtt_pub', 'mqtt_broker', 'PUBLISH uns/.../PID_TOP/output', '#22d3ee', msgDuration() * 0.8);
+  glowManager('mqtt_broker', 'rgba(34,211,238', 600);
+  await addMessagesParallel([
+    { from: 'mqtt_broker', to: 'uns_mes', label: 'PID_TOP.output=73.1', color: '#84cc16', duration: msgDuration() * 0.8 },
+    { from: 'mqtt_broker', to: 'uns_hist', label: 'PID_TOP.output=73.1', color: '#84cc16', duration: msgDuration() * 0.8 },
+  ]);
+  glowManager('uns_mes', 'rgba(132,204,22', 800);
+  glowManager('uns_hist', 'rgba(132,204,22', 800);
+  await wait(150);
+
+  // Step 7: Summary
+  showStep(7, steps, t('uns_7'));
+  await waitForStep();
+  var path = ['plc', 'driver', 'ev', 'mqtt_pub', 'mqtt_broker', 'uns_mes', 'uns_hist'];
+  for (var j = 0; j < path.length; j++) {
+    var id = path[j];
+    var c = managers[id].color;
+    var r = parseInt(c.slice(1,3), 16);
+    var g = parseInt(c.slice(3,5), 16);
+    var b = parseInt(c.slice(5,7), 16);
+    glowManager(id, 'rgba(' + r + ',' + g + ',' + b, 1500);
+    await wait(100);
+  }
+}
+
+registerScenario('uns', scenarioUns);
+
+// === mobile-viewport.js ===
+// ── MOBILE VIEWPORT: Camera follow + Overview ──
+// Loaded after renderer.js — overrides resize() and draw()
+
+// Virtual layout dimensions (desktop scale for readable managers)
+var VIRTUAL_W = 1200;
+var VIRTUAL_H = 700;
+
+// Camera state
+var camera = {
+  x: 0, y: 0, zoom: 0.4,
+  targetX: 0, targetY: 0, targetZoom: 0.4
+};
+var overviewMode = true;
+
+// Compute overview target: fit all visible managers in viewport
+function computeOverviewTarget() {
+  var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (var id in managers) {
+    if (!managers.hasOwnProperty(id)) continue;
+    if (!isManagerVisible(id)) continue;
+    var p = mgrPos[id];
+    if (!p) continue;
+    minX = Math.min(minX, p.x - mgrW / 2);
+    maxX = Math.max(maxX, p.x + mgrW / 2);
+    minY = Math.min(minY, p.y - mgrH / 2);
+    maxY = Math.max(maxY, p.y + mgrH / 2);
+  }
+  if (minX === Infinity) return;
+  var margin = 50;
+  minX -= margin; minY -= margin; maxX += margin; maxY += margin;
+  camera.targetX = (minX + maxX) / 2;
+  camera.targetY = (minY + maxY) / 2;
+  // Account for step bar (~40px top) and control bar (~60px bottom)
+  var usableH = canvasH - 100;
+  if (usableH < 100) usableH = canvasH;
+  camera.targetZoom = Math.min(
+    canvasW / (maxX - minX),
+    usableH / (maxY - minY)
+  );
+}
+
+// Update camera each frame
+function updateCamera() {
+  if (overviewMode) {
+    computeOverviewTarget();
+  } else if (messages.length > 0) {
+    var msg = messages[messages.length - 1];
+    var from = mgrPos[msg.from];
+    var to = mgrPos[msg.to];
+    if (from && to) {
+      if (msg.from === msg.to) {
+        // Self-message: center on the manager
+        camera.targetX = from.x;
+        camera.targetY = from.y;
+        camera.targetZoom = Math.min(canvasW / (mgrW * 5), canvasH / (mgrH * 5), 1.2);
+      } else {
+        // Center between source and destination
+        camera.targetX = (from.x + to.x) / 2;
+        camera.targetY = (from.y + to.y) / 2;
+        // Zoom to fit both managers with padding
+        var dx = Math.abs(to.x - from.x) + mgrW * 3.5;
+        var dy = Math.abs(to.y - from.y) + mgrH * 4;
+        camera.targetZoom = Math.min(canvasW / dx, canvasH / dy, 1.2);
+        camera.targetZoom = Math.max(camera.targetZoom, 0.35);
+      }
+    }
+  }
+  // Smooth lerp
+  var lerp = 0.065;
+  camera.x += (camera.targetX - camera.x) * lerp;
+  camera.y += (camera.targetY - camera.y) * lerp;
+  camera.zoom += (camera.targetZoom - camera.zoom) * lerp;
+}
+
+// Override resize: layout at virtual desktop size
+resize = function() {
+  var area = document.getElementById('canvas-area');
+  var dpr = window.devicePixelRatio || 1;
+  canvasW = area.clientWidth;
+  canvasH = area.clientHeight;
+  canvas.width = canvasW * dpr;
+  canvas.height = canvasH * dpr;
+  canvas.style.width = canvasW + 'px';
+  canvas.style.height = canvasH + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // Layout at virtual desktop size for readable manager boxes
+  layoutManagers(VIRTUAL_W, VIRTUAL_H);
+  if (overviewMode) {
+    computeOverviewTarget();
+    // Snap camera immediately on resize
+    camera.x = camera.targetX;
+    camera.y = camera.targetY;
+    camera.zoom = camera.targetZoom;
+  }
+};
+resize();
+
+// Override draw: apply camera transform around world rendering
+var _origDraw = draw;
+draw = function() {
+  updateCamera();
+
+  var dpr = window.devicePixelRatio || 1;
+  // Clear full canvas with identity transform
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, canvasW, canvasH);
+
+  // Apply camera: translate so camera center maps to screen center
+  ctx.save();
+  ctx.translate(canvasW / 2, canvasH / 2);
+  ctx.scale(camera.zoom, camera.zoom);
+  ctx.translate(-camera.x, -camera.y);
+
+  // Original draw handles: clearRect (harmless redo), grid, boundary,
+  // connections, managers, messages, glows, requestAnimationFrame(draw)
+  _origDraw();
+
+  ctx.restore();
+};
+
+// === mobile-ui.js ===
+// ── MOBILE UI: Menu, Play/Pause/Restart, Overview, Lang/Speed ──
+// Loaded after mobile-viewport.js and all scenarios
+
+// ── Auto-play ──
+var mobileAutoPlay = true;
+var autoPlayTimer = null;
+var lastScheduledResolve = null;
+
+function scheduleAutoAdvance() {
+  if (!mobileAutoPlay || !stepResolve || !scenarioRunning) return;
+  if (stepResolve === lastScheduledResolve) return;
+  lastScheduledResolve = stepResolve;
+  autoPlayTimer = setTimeout(function() {
+    if (mobileAutoPlay && stepResolve) {
+      nextStep();
+      lastScheduledResolve = null;
+    }
+  }, 1800 / getSpeed());
+}
+
+// Poll for stepResolve to auto-advance
+setInterval(function() {
+  scheduleAutoAdvance();
+  // Update play/pause icon when scenario finishes
+  if (!scenarioRunning && document.getElementById('icon-pause').style.display !== 'none') {
+    updatePlayPauseIcon();
+  }
+}, 200);
+
+// ── Play / Pause ──
+function togglePlayPause() {
+  if (!scenarioRunning) {
+    // No scenario running; if menu is hidden, show it
+    if (!document.getElementById('mobile-menu').classList.contains('visible')) {
+      mobileRestart();
+    }
+    return;
+  }
+  mobileAutoPlay = !mobileAutoPlay;
+  updatePlayPauseIcon();
+  if (mobileAutoPlay) {
+    lastScheduledResolve = null;
+    scheduleAutoAdvance();
+  } else {
+    if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
+    lastScheduledResolve = null;
+  }
+}
+
+function updatePlayPauseIcon() {
+  var playIcon = document.getElementById('icon-play');
+  var pauseIcon = document.getElementById('icon-pause');
+  if (mobileAutoPlay && scenarioRunning) {
+    playIcon.style.display = 'none';
+    pauseIcon.style.display = '';
+  } else {
+    playIcon.style.display = '';
+    pauseIcon.style.display = 'none';
+  }
+}
+
+// ── Restart ──
+function mobileRestart() {
+  // Cancel timers
+  if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
+  lastScheduledResolve = null;
+
+  resetAll();
+  mobileAutoPlay = true;
+  overviewMode = true;
+  updatePlayPauseIcon();
+
+  // Show menu
+  document.getElementById('mobile-menu').classList.add('visible');
+  resize();
+}
+
+// ── Scenario selection ──
+function mobileSelectScenario(name) {
+  // Cancel timers
+  if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
+  lastScheduledResolve = null;
+
+  resetAll();
+
+  // Hide menu
+  document.getElementById('mobile-menu').classList.remove('visible');
+
+  // Set visible managers for this scenario
+  visibleManagers = new Set(scenarioVisibility[name] || BASE_MANAGERS);
+  resize();
+
+  // Snap camera to overview
+  overviewMode = true;
+  computeOverviewTarget();
+  camera.x = camera.targetX;
+  camera.y = camera.targetY;
+  camera.zoom = camera.targetZoom;
+
+  // Start auto-play
+  mobileAutoPlay = true;
+  updatePlayPauseIcon();
+
+  // Brief overview, then start scenario in follow mode
+  setTimeout(function() {
+    overviewMode = false;
+    runScenario(name);
+  }, 1200);
+}
+
+// ── Overview toggle ──
+function toggleOverview() {
+  overviewMode = !overviewMode;
+  document.getElementById('ctrl-overview').classList.toggle('active', overviewMode);
+}
+
+// ── Language ──
+function mobileSetLang(lang) {
+  setLang(lang);
+  // Update mobile-specific lang buttons
+  var frBtn = document.getElementById('lang-fr-mobile');
+  var enBtn = document.getElementById('lang-en-mobile');
+  if (frBtn) frBtn.className = 'lang-btn' + (lang === 'fr' ? ' active' : '');
+  if (enBtn) enBtn.className = 'lang-btn' + (lang === 'en' ? ' active' : '');
+  // Update tile descriptions
+  var subtitle = document.getElementById('mobile-menu-subtitle');
+  if (subtitle) subtitle.textContent = t('menuSubtitle');
+  var scenarios = ['dpGet', 'dpSet', 'dpConnect', 'plcLive', 'cycle', 'history', 'kafka', 'mcp', 'uns'];
+  scenarios.forEach(function(s) {
+    var el = document.getElementById('tile-desc-' + s);
+    if (el) el.textContent = t('tile_' + s);
+  });
+}
+
+// ── Speed sync ──
+(function() {
+  var speedMobile = document.getElementById('speed-mobile');
+  var speedDesktop = document.getElementById('speed');
+  if (speedMobile && speedDesktop) {
+    speedMobile.value = speedDesktop.value;
+    speedMobile.addEventListener('input', function() {
+      speedDesktop.value = speedMobile.value;
+      speedDesktop.dispatchEvent(new Event('input'));
+    });
+  }
+})();
+
+// ── Init ──
+// Apply detected language to mobile elements
+mobileSetLang(currentLang);
+// Show menu on load
+document.getElementById('mobile-menu').classList.add('visible');
+
+</script>
+
+</body>
+</html>
