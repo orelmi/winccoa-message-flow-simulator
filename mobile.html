@@ -2680,8 +2680,8 @@ async function scenarioUns() {
 registerScenario('uns', scenarioUns);
 
 // === mobile-viewport.js ===
-// ── MOBILE VIEWPORT: Camera follow + Overview ──
-// Loaded after renderer.js — overrides resize() and draw()
+// ── MOBILE VIEWPORT: Camera follow + Overview + Persistent messages ──
+// Loaded after renderer.js — overrides resize(), draw(), addMessage(), glowManager()
 
 // Virtual layout dimensions (desktop scale for readable managers)
 var VIRTUAL_W = 1200;
@@ -2693,6 +2693,32 @@ var camera = {
   targetX: 0, targetY: 0, targetZoom: 0.4
 };
 var overviewMode = true;
+
+// ── Persistent messages ──
+// Completed arrows that stay visible until destination node glows
+var persistentMessages = []; // { from, to, label, color }
+
+// Override addMessage: keep a persistent copy after the arrow animation completes
+var _origAddMessage = addMessage;
+addMessage = function(fromId, toId, label, color, duration) {
+  var promise = _origAddMessage(fromId, toId, label, color, duration);
+  promise.then(function() {
+    // Keep arrow visible as a persistent overlay
+    persistentMessages.push({
+      from: fromId, to: toId, label: label, color: color
+    });
+  });
+  return promise;
+};
+
+// Override glowManager: when a node highlights, clear persistent arrows pointing TO it
+var _origGlowManager = glowManager;
+glowManager = function(id, color, duration) {
+  persistentMessages = persistentMessages.filter(function(pm) {
+    return pm.to !== id;
+  });
+  _origGlowManager(id, color, duration);
+};
 
 // Compute overview target: fit all visible managers in viewport
 function computeOverviewTarget() {
@@ -2777,7 +2803,7 @@ resize = function() {
 };
 resize();
 
-// Override draw: apply camera transform around world rendering
+// Override draw: apply camera transform + render persistent messages
 var _origDraw = draw;
 draw = function() {
   updateCamera();
@@ -2797,6 +2823,35 @@ draw = function() {
   // connections, managers, messages, glows, requestAnimationFrame(draw)
   _origDraw();
 
+  // Draw persistent messages (completed arrows that stay until node glows)
+  for (var i = 0; i < persistentMessages.length; i++) {
+    var pm = persistentMessages[i];
+    var pfrom = mgrPos[pm.from];
+    var pto = mgrPos[pm.to];
+    if (!pfrom || !pto) continue;
+    if (pm.from === pm.to) {
+      // Self-loop
+      var lcx = pfrom.x, lcy = pfrom.y - mgrH / 2 - 20;
+      ctx.beginPath();
+      ctx.arc(lcx, lcy, 18, 0, Math.PI * 2);
+      ctx.strokeStyle = pm.color;
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = 0.7;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      if (pm.label) {
+        var s = getCanvasScale();
+        var fs = Math.max(8, Math.round(10 * s));
+        ctx.font = '600 ' + fs + 'px "Consolas", "Fira Code", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = pm.color;
+        ctx.fillText(pm.label, lcx, lcy - 24);
+      }
+    } else {
+      drawArrow(pfrom.x, pfrom.y, pto.x, pto.y, pm.color, 1.0, pm.label);
+    }
+  }
+
   ctx.restore();
 };
 
@@ -2808,6 +2863,11 @@ draw = function() {
 var mobileAutoPlay = true;
 var autoPlayTimer = null;
 var lastScheduledResolve = null;
+
+// ── Startup state ──
+var mobileScenarioStarting = false;
+var mobileStartTimer = null;
+var mobileStartingName = '';
 
 function scheduleAutoAdvance() {
   if (!mobileAutoPlay || !stepResolve || !scenarioRunning) return;
@@ -2825,35 +2885,57 @@ function scheduleAutoAdvance() {
 setInterval(function() {
   scheduleAutoAdvance();
   // Update play/pause icon when scenario finishes
-  if (!scenarioRunning && document.getElementById('icon-pause').style.display !== 'none') {
-    updatePlayPauseIcon();
+  if (!scenarioRunning && !mobileScenarioStarting) {
+    if (document.getElementById('icon-pause').style.display !== 'none') {
+      updatePlayPauseIcon();
+    }
+    // Clear persistent messages when scenario ends
+    if (persistentMessages.length > 0) {
+      persistentMessages = [];
+    }
   }
 }, 200);
 
 // ── Play / Pause ──
 function togglePlayPause() {
-  if (!scenarioRunning) {
-    // No scenario running; if menu is hidden, show it
-    if (!document.getElementById('mobile-menu').classList.contains('visible')) {
-      mobileRestart();
+  // During startup overview: skip delay and start scenario immediately
+  if (mobileScenarioStarting) {
+    if (mobileStartTimer) {
+      clearTimeout(mobileStartTimer);
+      mobileStartTimer = null;
+    }
+    mobileScenarioStarting = false;
+    overviewMode = false;
+    mobileAutoPlay = true;
+    updatePlayPauseIcon();
+    runScenario(mobileStartingName);
+    return;
+  }
+
+  // If scenario is running, toggle play/pause
+  if (scenarioRunning) {
+    mobileAutoPlay = !mobileAutoPlay;
+    updatePlayPauseIcon();
+    if (mobileAutoPlay) {
+      lastScheduledResolve = null;
+      scheduleAutoAdvance();
+    } else {
+      if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
+      lastScheduledResolve = null;
     }
     return;
   }
-  mobileAutoPlay = !mobileAutoPlay;
-  updatePlayPauseIcon();
-  if (mobileAutoPlay) {
-    lastScheduledResolve = null;
-    scheduleAutoAdvance();
-  } else {
-    if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
-    lastScheduledResolve = null;
+
+  // Nothing running: go back to menu
+  if (!document.getElementById('mobile-menu').classList.contains('visible')) {
+    mobileRestart();
   }
 }
 
 function updatePlayPauseIcon() {
   var playIcon = document.getElementById('icon-play');
   var pauseIcon = document.getElementById('icon-pause');
-  if (mobileAutoPlay && scenarioRunning) {
+  if ((mobileAutoPlay && scenarioRunning) || mobileScenarioStarting) {
     playIcon.style.display = 'none';
     pauseIcon.style.display = '';
   } else {
@@ -2866,9 +2948,12 @@ function updatePlayPauseIcon() {
 function mobileRestart() {
   // Cancel timers
   if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
+  if (mobileStartTimer) { clearTimeout(mobileStartTimer); mobileStartTimer = null; }
   lastScheduledResolve = null;
+  mobileScenarioStarting = false;
 
   resetAll();
+  persistentMessages = [];
   mobileAutoPlay = true;
   overviewMode = true;
   updatePlayPauseIcon();
@@ -2880,11 +2965,13 @@ function mobileRestart() {
 
 // ── Scenario selection ──
 function mobileSelectScenario(name) {
-  // Cancel timers
+  // Cancel any pending timers
   if (autoPlayTimer) { clearTimeout(autoPlayTimer); autoPlayTimer = null; }
+  if (mobileStartTimer) { clearTimeout(mobileStartTimer); mobileStartTimer = null; }
   lastScheduledResolve = null;
 
   resetAll();
+  persistentMessages = [];
 
   // Hide menu
   document.getElementById('mobile-menu').classList.remove('visible');
@@ -2900,12 +2987,16 @@ function mobileSelectScenario(name) {
   camera.y = camera.targetY;
   camera.zoom = camera.targetZoom;
 
-  // Start auto-play
+  // Mark as starting (guards play button)
+  mobileScenarioStarting = true;
+  mobileStartingName = name;
   mobileAutoPlay = true;
   updatePlayPauseIcon();
 
   // Brief overview, then start scenario in follow mode
-  setTimeout(function() {
+  mobileStartTimer = setTimeout(function() {
+    mobileScenarioStarting = false;
+    mobileStartTimer = null;
     overviewMode = false;
     runScenario(name);
   }, 1200);
