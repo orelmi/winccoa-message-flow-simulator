@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WinCC OA — Message Flow (Mobile)</title>
+<meta name="description" content="Mobile interactive simulator visualizing message flows between WinCC OA managers.">
+<meta name="author" content="Visuel Concept">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- __CSS__ -->
+<link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+
+<!-- Hidden elements required by core JS (engine.js, i18n.js, state.js, renderer.js) -->
+<div id="compat-hidden" style="display:none">
+  <button id="btn-dpget"></button>
+  <button id="btn-dpset"></button>
+  <button id="btn-dpconnect"></button>
+  <button id="btn-plclive"></button>
+  <button id="btn-cycle"></button>
+  <button id="btn-history"></button>
+  <button id="btn-kafka"></button>
+  <button id="btn-mcp"></button>
+  <button id="btn-uns"></button>
+  <button id="btn-prev"></button>
+  <button id="btn-step"></button>
+  <button id="btn-start-scenario"></button>
+  <button id="btn-reset"></button>
+  <button id="lang-fr" class="lang-btn active"></button>
+  <button id="lang-en" class="lang-btn"></button>
+  <input type="range" id="speed" min="1" max="5" value="3" step="1">
+  <span id="speed-label"></span>
+  <div id="info-panel">
+    <div id="panel-drag-handle"><button id="panel-toggle-btn"></button></div>
+    <div id="panel-body">
+      <table id="sub-table"><thead><tr><th id="th-mgr"></th><th></th><th></th></tr></thead><tbody id="sub-body"></tbody></table>
+      <div><span id="panel-pi-title"></span><div id="pi-values"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Visible UI -->
+<div id="app">
+  <div id="step-bar">
+    <div class="idle-text" id="idle-msg"></div>
+    <span class="step-num" id="step-num" style="display:none"></span>
+    <div class="step-text" id="step-text" style="display:none"></div>
+    <div id="scenario-intro" style="display:none">
+      <div class="scenario-intro-content">
+        <span class="scenario-intro-title" id="intro-title"></span>
+        <span class="scenario-intro-desc" id="intro-desc"></span>
+      </div>
+    </div>
+  </div>
+  <div id="canvas-area">
+    <canvas id="canvas"></canvas>
+  </div>
+</div>
+
+<!-- Control bar -->
+<div id="mobile-controls">
+  <button id="ctrl-restart" class="ctrl-btn" aria-label="Restart" onclick="mobileRestart()">
+    <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor"/></svg>
+  </button>
+  <button id="ctrl-play-pause" class="ctrl-btn ctrl-play" aria-label="Play" onclick="togglePlayPause()">
+    <svg id="icon-play" viewBox="0 0 24 24" width="28" height="28"><polygon points="7,3 21,12 7,21" fill="currentColor"/></svg>
+    <svg id="icon-pause" viewBox="0 0 24 24" width="28" height="28" style="display:none"><rect x="5" y="3" width="5" height="18" rx="1" fill="currentColor"/><rect x="14" y="3" width="5" height="18" rx="1" fill="currentColor"/></svg>
+  </button>
+  <div class="ctrl-spacer"></div>
+  <button id="ctrl-overview" class="ctrl-btn" aria-label="Overview" onclick="toggleOverview()">
+    <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 3h7v2H5v5H3V3zm11 0h7v2h-5v5h-2V3zM3 14h2v5h5v2H3v-7zm13 5h-5v2h7v-7h-2v5z" fill="currentColor"/></svg>
+  </button>
+</div>
+
+<!-- Full-screen scenario menu -->
+<div id="mobile-menu" class="mobile-menu visible">
+  <div class="mobile-menu-header">
+    <img src="../assets/logo_VisuelConcept_couleurs.png" alt="Visuel Concept" class="mobile-menu-logo" id="mobile-logo">
+    <div class="mobile-menu-title">WinCC OA Message Flow</div>
+    <div class="mobile-menu-subtitle" id="mobile-menu-subtitle">Choose a scenario</div>
+  </div>
+  <div class="mobile-menu-grid" id="mobile-menu-grid">
+    <button class="mobile-tile" onclick="mobileSelectScenario('dpGet')">
+      <span class="mobile-tile-icon">&#8681;</span>
+      <span class="mobile-tile-num">S1</span>
+      <span class="mobile-tile-label">dpGet</span>
+      <span class="mobile-tile-desc" id="tile-desc-dpGet">One-time value read from the process image (RAM).</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('dpSet')">
+      <span class="mobile-tile-icon">&#8679;</span>
+      <span class="mobile-tile-num">S2</span>
+      <span class="mobile-tile-label">dpSet</span>
+      <span class="mobile-tile-desc" id="tile-desc-dpSet">Operator setpoint write to all subscribed managers.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('dpConnect')">
+      <span class="mobile-tile-icon">&#8644;</span>
+      <span class="mobile-tile-num">S3</span>
+      <span class="mobile-tile-label">dpConnect</span>
+      <span class="mobile-tile-desc" id="tile-desc-dpConnect">Publish/subscribe subscription to a datapoint.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('plcLive')">
+      <span class="mobile-tile-icon">&#9735;</span>
+      <span class="mobile-tile-num">S4</span>
+      <span class="mobile-tile-label">PLC Live</span>
+      <span class="mobile-tile-desc" id="tile-desc-plcLive">Spontaneous PLC data, real-time push notifications.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('cycle')">
+      <span class="mobile-tile-icon">&#8635;</span>
+      <span class="mobile-tile-num">S5</span>
+      <span class="mobile-tile-label">Full cycle</span>
+      <span class="mobile-tile-desc" id="tile-desc-cycle">Full furnace regulation cycle with 2 UIs.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('history')">
+      <span class="mobile-tile-icon">&#9776;</span>
+      <span class="mobile-tile-num">S6</span>
+      <span class="mobile-tile-label">History read</span>
+      <span class="mobile-tile-desc" id="tile-desc-history">History read via NGA and PostgreSQL.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('kafka')">
+      <span class="mobile-tile-icon">&#9656;&#9656;</span>
+      <span class="mobile-tile-num">S7</span>
+      <span class="mobile-tile-label">Node.js &rarr; Kafka</span>
+      <span class="mobile-tile-desc" id="tile-desc-kafka">Kafka streaming for predictive maintenance.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('mcp')">
+      <span class="mobile-tile-icon">&#10038;</span>
+      <span class="mobile-tile-num">S8</span>
+      <span class="mobile-tile-label">Claude AI (MCP)</span>
+      <span class="mobile-tile-desc" id="tile-desc-mcp">PID optimization via Claude Desktop App and MCP.</span>
+    </button>
+    <button class="mobile-tile" onclick="mobileSelectScenario('uns')">
+      <span class="mobile-tile-icon">&#9041;</span>
+      <span class="mobile-tile-num">S9</span>
+      <span class="mobile-tile-label">UNS (MQTT)</span>
+      <span class="mobile-tile-desc" id="tile-desc-uns">Unified Namespace (UNS) architecture via MQTT.</span>
+    </button>
+  </div>
+  <div class="mobile-menu-footer">
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="lang-fr-mobile" onclick="mobileSetLang('fr')">FR</button>
+      <button class="lang-btn" id="lang-en-mobile" onclick="mobileSetLang('en')">EN</button>
+    </div>
+    <div class="speed-control">
+      <span>Speed</span>
+      <input type="range" id="speed-mobile" min="1" max="5" value="3" step="1">
+    </div>
+  </div>
+</div>
+
+<!-- __JS_APP__ -->
+<script src="app.js"></script>
+<!-- __JS_MOBILE__ -->
+<script src="mobile-viewport.js"></script>
+<script src="mobile-ui.js"></script>
+</body>
+</html>
