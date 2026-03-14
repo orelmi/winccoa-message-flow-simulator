@@ -31,7 +31,7 @@ async function scenarioMcp() {
   showStep(1, steps, t('mcp_1'));
   await waitForStep();
   glowManager('claude_app', 'rgba(217,70,239', 1200);
-  await addMessage('claude_app', 'claude_app', 'PID tuning request', '#d946ef', msgDuration() * 0.5);
+  await addMessage('claude_app', 'claude_app', 'PID tuning request', '#d946ef', msgDuration());
   await wait(150);
 
   // Step 2: Claude Desktop App sends to Anthropic API
@@ -70,36 +70,36 @@ async function scenarioMcp() {
   // Step 5: Claude sends tool_result to Anthropic, gets second tool_use
   showStep(5, steps, t('mcp_5'));
   await waitForStep();
-  await addMessage('claude_app', 'anthropic', 'tool_result + continuation', '#d946ef', msgDuration() * 0.8);
+  await addMessage('claude_app', 'anthropic', 'tool_result + continuation', '#d946ef', msgDuration());
   glowManager('anthropic', 'rgba(217,70,239', 1000);
-  await addMessage('anthropic', 'claude_app', 'tool_use: get_trend_data', '#d946ef', msgDuration() * 0.8);
+  await addMessage('anthropic', 'claude_app', 'tool_use: get_trend_data', '#d946ef', msgDuration());
   glowManager('claude_app', 'rgba(217,70,239', 800);
   await wait(150);
 
   // Step 6: Second MCP call for trends → EV → NGA → PostgreSQL
   showStep(6, steps, t('mcp_6'));
   await waitForStep();
-  await addMessage('claude_app', 'mcp_server', 'MCP: get_trend_data(TC_101, PID_TOP)', '#a855f7', msgDuration() * 0.8);
+  await addMessage('claude_app', 'mcp_server', 'MCP: get_trend_data(TC_101, PID_TOP)', '#a855f7', msgDuration());
   glowManager('mcp_server', 'rgba(168,85,247', 600);
-  await addMessage('mcp_server', 'ev', 'dpGetPeriod(TC_101, PID_TOP.output, -1h)', COLORS.request, msgDuration() * 0.8);
+  await addMessage('mcp_server', 'ev', 'dpGetPeriod(TC_101, PID_TOP.output, -1h)', COLORS.request, msgDuration());
   glowManager('ev', 'rgba(59,130,246', 600);
-  await addMessage('ev', 'nga', 'history read', COLORS.archive, msgDuration() * 0.6);
+  await addMessage('ev', 'nga', 'history read', COLORS.archive, msgDuration());
   glowManager('nga', 'rgba(236,72,153', 600);
-  await addMessage('nga', 'pgsql', 'SELECT ... FROM history', '#336791', msgDuration() * 0.6);
+  await addMessage('nga', 'pgsql', 'SELECT ... FROM history', '#336791', msgDuration());
   glowManager('pgsql', 'rgba(51,103,145', 600);
-  await addMessage('pgsql', 'nga', 'result set', '#336791', msgDuration() * 0.6);
+  await addMessage('pgsql', 'nga', 'result set', '#336791', msgDuration());
   glowManager('nga', 'rgba(236,72,153', 600);
-  await addMessage('nga', 'dm', 'history response', COLORS.response, msgDuration() * 0.6);
+  await addMessage('nga', 'dm', 'history response', COLORS.response, msgDuration());
   glowManager('dm', 'rgba(139,92,246', 600);
-  await addMessage('dm', 'ev', 'history data', COLORS.response, msgDuration() * 0.6);
-  await addMessage('ev', 'mcp_server', 'response: temp + PID curves', COLORS.response, msgDuration() * 0.8);
-  await addMessage('mcp_server', 'claude_app', 'tool_result: [{ts,temp,pid}...]', '#a855f7', msgDuration() * 0.8);
+  await addMessage('dm', 'ev', 'history data', COLORS.response, msgDuration());
+  await addMessage('ev', 'mcp_server', 'response: temp + PID curves', COLORS.response, msgDuration());
+  await addMessage('mcp_server', 'claude_app', 'tool_result: [{ts,temp,pid}...]', '#a855f7', msgDuration());
   await wait(150);
 
   // Step 7: Final response from Anthropic — PID tuning recommendation
   showStep(7, steps, t('mcp_7'));
   await waitForStep();
-  await addMessage('claude_app', 'anthropic', 'tool_result + continuation', '#d946ef', msgDuration() * 0.8);
+  await addMessage('claude_app', 'anthropic', 'tool_result + continuation', '#d946ef', msgDuration());
   glowManager('anthropic', 'rgba(217,70,239', 1200);
   await addMessage('anthropic', 'claude_app', 'PID recommendation: Kp=2.1, Ki=0.8', '#d946ef', msgDuration());
   glowManager('claude_app', 'rgba(217,70,239', 1500);

@@ -182,7 +182,7 @@ async function prevStep() {
 }
 
 function msgDuration() {
-  return 600 / getSpeed();
+  return 600;
 }
 
 var COLORS = {
