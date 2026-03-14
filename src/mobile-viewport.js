@@ -19,6 +19,10 @@ var persistentMessages = []; // { from, to, label, color }
 // Override addMessage: keep a persistent copy after the arrow animation completes
 var _origAddMessage = addMessage;
 addMessage = function(fromId, toId, label, color, duration) {
+  // Clear persistent arrows pointing TO the source node (we're moving on from it)
+  persistentMessages = persistentMessages.filter(function(pm) {
+    return pm.to !== fromId;
+  });
   var promise = _origAddMessage(fromId, toId, label, color, duration);
   promise.then(function() {
     // Keep arrow visible as a persistent overlay
