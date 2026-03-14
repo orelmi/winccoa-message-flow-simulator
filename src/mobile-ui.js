@@ -40,7 +40,7 @@ setInterval(function() {
 
 // ── Play / Pause ──
 function togglePlayPause() {
-  // During startup overview: skip delay and start scenario immediately
+  // During startup overview: start scenario on play click
   if (mobileScenarioStarting) {
     if (mobileStartTimer) {
       clearTimeout(mobileStartTimer);
@@ -49,8 +49,9 @@ function togglePlayPause() {
     mobileScenarioStarting = false;
     overviewMode = false;
     mobileAutoPlay = true;
-    updatePlayPauseIcon();
     runScenario(mobileStartingName);
+    // Update icon after runScenario sets scenarioRunning = true
+    updatePlayPauseIcon();
     return;
   }
 
