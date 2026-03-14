@@ -77,7 +77,7 @@ function togglePlayPause() {
 function updatePlayPauseIcon() {
   var playIcon = document.getElementById('icon-play');
   var pauseIcon = document.getElementById('icon-pause');
-  if ((mobileAutoPlay && scenarioRunning) || mobileScenarioStarting) {
+  if (mobileAutoPlay && scenarioRunning) {
     playIcon.style.display = 'none';
     pauseIcon.style.display = '';
   } else {
