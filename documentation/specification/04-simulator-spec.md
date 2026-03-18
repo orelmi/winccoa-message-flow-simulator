@@ -17,7 +17,7 @@
 | **S3 — dpConnect** | The UI Operator subscribes to TC_101.temperature. The EV registers and sends the initial value. |
 | **S4 — PLC Live** | The temperature changes spontaneously in the PLC. The Driver sends the value up via dpSet. The EV distributes by multicast to the CTRL PID and to both UI Managers (Operator + Monitoring). |
 | **S5 — Full cycle** | Complete regulation cycle: PLC → Driver → EV → DM/NGA → CTRL PID + 2 UIs → Driver → PLC. |
-| **S6 — History read** | The UI Monitoring requests the history of TC_101.temperature via dpGetPeriod(). The EV forwards the request to the NGA Frontend, which queries PostgreSQL. The response returns via NGA → DM → EV → UI. |
+| **S6 — History read** | The UI Monitoring requests the history of TC_101.temperature via dpGetPeriod(). The EV forwards the request to the NGA Frontend, which queries PostgreSQL. The response returns via NGA → DM → UI (the EV is not involved in the response path). |
 | **S7 — Node.js → Kafka (streaming)** | The JS Manager subscribes to furnace data via dpConnect, transforms and publishes messages to a Kafka broker. A predictive maintenance service consumes the Kafka topic and sends back an alert via the JS Manager. |
 | **S8 — Claude AI (MCP) — PID Optimization** | The maintenance engineer asks Claude to analyze PID performance. Via MCP, the Node.js gateway server reads PID parameters and trends. Claude analyzes the curves and proposes an optimized tuning (Kp, Ki). |
 | **S9 — UNS (MQTT)** | The MQTT Publisher publishes furnace data to an MQTT broker (Mosquitto). The MES subscribes to production data (cycle, parts), the Cloud Historian to all raw data. Decoupled ISA-95 architecture. |
@@ -29,7 +29,7 @@
 - **"dpConnect" button**: triggers S3 (subscription phase)
 - **"PLC Live" button**: triggers scenario S4 — spontaneous PLC data → Driver → EV → multicast to CTRL PID + 2 UI Managers
 - **"Full cycle" button**: plays scenario S5 step by step (complete regulation cycle)
-- **"History read" button**: triggers scenario S6 with the flow UI → EV → NGA → PostgreSQL → NGA → DM → EV → UI
+- **"History read" button**: triggers scenario S6 with the flow UI → EV → NGA → PostgreSQL → NGA → DM → UI
 - **"Node.js → Kafka" button**: triggers scenario S7 with the flow Driver → EV → JS Manager → Kafka → Predictive Maintenance Service → Kafka → JS Manager → EV → UI
 - **"Claude AI (MCP)" button**: triggers scenario S8 — PID optimization via Claude Desktop App → MCP Server → EV (dpGet/dpGetPeriod) → analysis and recommendation
 - **"UNS (MQTT)" button**: triggers scenario S9 — MQTT Publisher → MQTT Broker → MES (production) + Cloud Historian (raw data)
@@ -110,8 +110,7 @@
         {"from": "nga", "to": "pgsql", "label": "SELECT ... FROM history", "type": "external"},
         {"from": "pgsql", "to": "nga", "label": "result set (N rows)", "type": "response"},
         {"from": "nga", "to": "dm", "label": "history response", "type": "response"},
-        {"from": "dm", "to": "ev", "label": "history data", "type": "response"},
-        {"from": "ev", "to": "ui", "label": "response: history data", "type": "response"}
+        {"from": "dm", "to": "ui", "label": "response: history data", "type": "response"}
       ]
     },
     "S7_nodejs_kafka": {

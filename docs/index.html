@@ -2207,7 +2207,7 @@ if (isMobileView()) {
   setLang(currentLang);
 }
 
-// === scenarios/cycle.js ===
+// === scenarios\cycle.js ===
 // ── Scenario: Cycle complet ──
 Object.assign(i18n.fr, {
   cycle_1: '<b>Phase d\'initialisation</b> — Le <b>CTRL PID</b> appelle <code>dpConnect("onTemp", "TC_101.temperature")</code> pour s\'abonner a la temperature.',
@@ -2437,7 +2437,7 @@ async function scenarioCycle() {
 
 registerScenario('cycle', scenarioCycle);
 
-// === scenarios/dpconnect.js ===
+// === scenarios\dpconnect.js ===
 // ── Scenario: dpConnect ──
 Object.assign(i18n.fr, {
   dpConnect_1: 'Le <b>UI Operator</b> appelle <code>dpConnect("updateDisp", "TC_101.temperature")</code> — demande d\'abonnement',
@@ -2502,7 +2502,7 @@ async function scenarioDpConnect() {
 
 registerScenario('dpConnect', scenarioDpConnect);
 
-// === scenarios/dpget.js ===
+// === scenarios\dpget.js ===
 // ── Scenario: dpGet ──
 Object.assign(i18n.fr, {
   dpGet_1: 'Le <b>CTRL PID</b> appelle <code>dpGet("TC_101.temperature")</code> — requete envoyee a l\'<b>EV</b>',
@@ -2546,7 +2546,7 @@ async function scenarioDpGet() {
 
 registerScenario('dpGet', scenarioDpGet);
 
-// === scenarios/dpset.js ===
+// === scenarios\dpset.js ===
 // ── Scenario: dpSet ──
 Object.assign(i18n.fr, {
   dpSet_1: 'L\'operateur modifie la consigne dans le panel. Le <b>UI Operator</b> appelle <code>dpSet("PID_TOP.setpoint", 950.0)</code>',
@@ -2672,31 +2672,29 @@ async function scenarioDpSet() {
 
 registerScenario('dpSet', scenarioDpSet);
 
-// === scenarios/history.js ===
+// === scenarios\history.js ===
 // ── Scenario: History Read ──
 Object.assign(i18n.fr, {
   history_1: 'Le <b>UI Monitoring</b> demande l\'historique de TC_101.temperature sur les 2 dernieres heures via <code>dpGetPeriod()</code>.',
   history_2: 'L\'<b>EV</b> recoit la requete et la transmet au <b>NGA Frontend Manager</b> (lecture historique).',
   history_3: 'Le <b>NGA Frontend</b> interroge la base <b>PostgreSQL</b> pour recuperer les donnees archivees.',
   history_4: '<b>PostgreSQL</b> retourne les donnees historiques au <b>NGA Frontend</b>.',
-  history_5: 'Le <b>NGA Frontend</b> transmet la reponse au <b>DM</b> (Data Manager) qui sert de relais pour le retour.',
-  history_6: 'Le <b>DM</b> transmet les donnees historiques a l\'<b>EV</b>.',
-  history_7: 'L\'<b>EV</b> retourne les donnees historiques au <b>UI Monitoring</b>. Le panel affiche la courbe de temperature.',
-  history_8: '<b>Lecture historique terminee !</b> Le flux complet : UI \u2192 EV \u2192 NGA Frontend \u2192 PostgreSQL \u2192 NGA Frontend \u2192 DM \u2192 EV \u2192 UI.',
+  history_5: 'Le <b>NGA Frontend</b> transmet la reponse au <b>DM</b> (Data Manager).',
+  history_6: 'Le <b>DM</b> retourne les donnees historiques directement au <b>UI Monitoring</b>. Le panel affiche la courbe de temperature. L\'EV n\'est pas implique dans la reponse.',
+  history_7: '<b>Lecture historique terminee !</b> Le flux complet : UI \u2192 EV \u2192 NGA Frontend \u2192 PostgreSQL \u2192 NGA Frontend \u2192 DM \u2192 UI.',
 });
 Object.assign(i18n.en, {
   history_1: '<b>UI Monitoring</b> requests history of TC_101.temperature for the last 2 hours via <code>dpGetPeriod()</code>.',
   history_2: '<b>EV</b> receives the request and forwards it to the <b>NGA Frontend Manager</b> (history read).',
   history_3: '<b>NGA Frontend</b> queries the <b>PostgreSQL</b> database to retrieve archived data.',
   history_4: '<b>PostgreSQL</b> returns historical data to <b>NGA Frontend</b>.',
-  history_5: '<b>NGA Frontend</b> sends the response to <b>DM</b> (Data Manager) which relays the return path.',
-  history_6: '<b>DM</b> forwards historical data to <b>EV</b>.',
-  history_7: '<b>EV</b> returns historical data to <b>UI Monitoring</b>. The panel displays the temperature curve.',
-  history_8: '<b>History read complete!</b> Full flow: UI \u2192 EV \u2192 NGA Frontend \u2192 PostgreSQL \u2192 NGA Frontend \u2192 DM \u2192 EV \u2192 UI.',
+  history_5: '<b>NGA Frontend</b> sends the response to <b>DM</b> (Data Manager).',
+  history_6: '<b>DM</b> returns historical data directly to <b>UI Monitoring</b>. The panel displays the temperature curve. The EV is not involved in the response.',
+  history_7: '<b>History read complete!</b> Full flow: UI \u2192 EV \u2192 NGA Frontend \u2192 PostgreSQL \u2192 NGA Frontend \u2192 DM \u2192 UI.',
 });
 
 async function scenarioHistoryRead() {
-  var steps = 8;
+  var steps = 7;
 
   showStep(1, steps, t('history_1'));
   await waitForStep();
@@ -2731,20 +2729,14 @@ async function scenarioHistoryRead() {
   showStep(6, steps, t('history_6'));
   await waitForStep();
   glowManager('dm', 'rgba(139,92,246', 800);
-  await addMessage('dm', 'ev', 'history data', COLORS.response, msgDuration());
+  await addMessage('dm', 'ui2', 'response: history data', COLORS.response, msgDuration());
+  glowManager('ui2', 'rgba(234,179,8', 1200);
   await wait(200);
 
   showStep(7, steps, t('history_7'));
   await waitForStep();
-  glowManager('ev', 'rgba(59,130,246', 600);
-  await addMessage('ev', 'ui2', 'response: history data', COLORS.response, msgDuration());
-  glowManager('ui2', 'rgba(234,179,8', 1200);
-  await wait(200);
-
-  showStep(8, steps, t('history_8'));
-  await waitForStep();
   // Flash the full path for visual effect
-  var path = ['ui2', 'ev', 'nga', 'pgsql', 'nga', 'dm', 'ev', 'ui2'];
+  var path = ['ui2', 'ev', 'nga', 'pgsql', 'nga', 'dm', 'ui2'];
   for (var j = 0; j < path.length; j++) {
     var id = path[j];
     var c = managers[id].color;
@@ -2758,7 +2750,7 @@ async function scenarioHistoryRead() {
 
 registerScenario('history', scenarioHistoryRead);
 
-// === scenarios/kafka.js ===
+// === scenarios\kafka.js ===
 // ── Scenario: Node.js → Kafka ──
 Object.assign(i18n.fr, {
   kafka_1: 'L\'<b>automate</b> envoie la temperature et les vibrations au <b>Driver</b> via OPC UA. Le Driver appelle <code>dpSet</code> pour TC_101.temp et HR_TOP.vibration.',
@@ -2905,7 +2897,7 @@ async function scenarioKafka() {
 
 registerScenario('kafka', scenarioKafka);
 
-// === scenarios/mcp.js ===
+// === scenarios\mcp.js ===
 // ── Scenario: MCP / Claude Desktop App ──
 Object.assign(i18n.fr, {
   mcp_1: 'L\'ingenieur maintenance ouvre <b>Claude Desktop App</b> et saisit : "Le four met trop de temps a atteindre la consigne. Analyse les parametres PID et propose un reglage."',
@@ -3030,7 +3022,7 @@ async function scenarioMcp() {
 
 registerScenario('mcp', scenarioMcp);
 
-// === scenarios/plclive.js ===
+// === scenarios\plclive.js ===
 // ── Scenario: PLC Live ──
 Object.assign(i18n.fr, {
   plcLive_1: 'La temperature dans le four change spontanement. L\'<b>automate</b> envoie la nouvelle valeur au <b>Driver</b> via OPC UA.',
@@ -3143,7 +3135,7 @@ async function scenarioPlcLive() {
 
 registerScenario('plcLive', scenarioPlcLive);
 
-// === scenarios/uns.js ===
+// === scenarios\uns.js ===
 // ── Scenario: UNS / MQTT Publisher ──
 Object.assign(i18n.fr, {
   uns_1: 'L\'<b>automate</b> envoie la temperature mesuree au <b>Driver</b> via OPC UA. Le Driver appelle <code>dpSet("TC_101.temperature", 847.3)</code>.',
